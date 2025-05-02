@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Form</title>
+    <!-- Added FontAwesome library for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bungee+Shade&display=swap');
+        /* Global styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #333333;
+            color: #ffffff;
+            padding: 20px;
+        }
+        
+        /* Header styles */
+        .header {
+            background-color: #ffed00;
+            padding: 30px 20px;
+            text-align: center;
+            color: #333333;
+            
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 3px 3px 0 #333333;
+            margin-bottom: 10px;
+            font-family: 'Bungee Shade';
+        }
+        
+        .header p {
+            font-size: 1rem;
+            margin-top: 15px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family:'Courier New', Courier, monospace;
+            font-weight: bolder;
+        }
+        
+        .header-underline {
+            width: 150px;
+            height: 5px;
+            background-color: #00b7ff;
+            margin: 5px auto 15px;
+            border-radius: 5px;
+        }
+        
+        /* Form styles */
+        .form-container {
+            padding: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #ffed00;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            background-color: #3a3a3a;
+            border: 2px solid #ffed00;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 16px;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #00b7ff;
+            box-shadow: 0 0 5px rgba(0, 183, 255, 0.5);
+        }
+        
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .rating {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .rating input[type="radio"] {
+            display: none;
+        }
+        
+        .rating label {
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            background-color: #3a3a3a;
+            border: 2px solid #ffed00;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffed00;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        
+        .rating input[type="radio"]:checked + label {
+            background-color: #ffed00;
+            color: #333333;
+            transform: scale(1.1);
+        }
+        
+        .submit-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #ffed00;
+            color: #333333;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+       
+        
+        .submit-btn:hover {
+            background-color: #00b7ff;
+            transform: translateY(-3px);
+        }
+        
+      
+        
+        .form-section-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-number {
+            width: 40px;
+            height: 40px;
+            background-color: #ffed00;
+            color: #333333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            margin-right: 15px;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: #ffed00;
+        }
+
+        
+        .paper-alert {
+            background: #fff;
+            border-radius: 2px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23), 
+                        0 0 0 1px rgba(0,0,0,0.05);
+            min-width: 320px;
+            max-width: 400px;
+            position: fixed;
+            right: 16px;
+            top: 16px;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10000;
+            transform-origin: top right;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Torn paper effect */
+        .paper-alert::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            width: 100%;
+            height: 4px;
+            background-color: #fff;
+            background-image: 
+            radial-gradient(circle at 2px 3px, transparent 2px, #fff 2px, #fff 3px, transparent 3px),
+            radial-gradient(circle at 10px 3px, transparent 2px, #fff 2px, #fff 3px, transparent 3px),
+            radial-gradient(circle at 18px 3px, transparent 2px, #fff 2px, #fff 3px, transparent 3px),
+            radial-gradient(circle at 26px 3px, transparent 2px, #fff 2px, #fff 3px, transparent 3px),
+            radial-gradient(circle at 34px 3px, transparent 2px, #fff 2px, #fff 3px, transparent 3px),
+            radial-gradient(circle at 42px 3px, transparent 2px, #fff 2px, #fff 3px, transparent 3px);
+            background-size: 50px 10px;
+            z-index: 2;
+        }
+        
+        /* Paper texture */
+        .paper-alert::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeBlend mode='screen'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .paper-alert.showAlert {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .paper-alert.show {
+            animation: paper_enter 0.7s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+        }
+        
+        @keyframes paper_enter {
+            0% { transform: translateX(100%) rotate(5deg); }
+            50% { transform: translateX(-10%) rotate(-2deg); }
+            75% { transform: translateX(5%) rotate(1deg); }
+            100% { transform: translateX(0) rotate(0); }
+        }
+        
+        .paper-alert.hide {
+            animation: paper_exit 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+        }
+        
+        @keyframes paper_exit {
+            0% { transform: translateX(0) rotate(0); }
+            30% { transform: translateX(5%) rotate(1deg); }
+            100% { transform: translateX(110%) rotate(5deg); }
+        }
+        
+        .paper-alert-content {
+            position: relative;
+            padding: 18px 15px;
+            z-index: 3;
+        }
+        
+        .paper-pin {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #f44336;
+            border-radius: 50%;
+            top: 10px;
+            left: 20px;
+            box-shadow: inset 0 0 0 2px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        .paper-pin:after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+        }
+        
+        .paper-clip {
+            position: absolute;
+            top: -8px;
+            right: 30px;
+            width: 30px;
+            height: 30px;
+            border: 2px solid #5d9cec;
+            border-radius: 0 0 0 10px;
+            border-top: none;
+            border-right: none;
+            transform: rotate(45deg);
+            z-index: 10;
+        }
+        
+        .paper-clip:before {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 10px;
+            border: 2px solid #5d9cec;
+            border-radius: 0 5px 0 5px;
+            border-top: none;
+            border-right: none;
+            top: 0;
+            left: 0;
+            transform: rotate(0deg);
+        }
+        
+        .alert-icon {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .alert-icon i {
+            font-size: 22px;
+            color: #f44336;
+            margin-right: 10px;
+        }
+        
+        .alert-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: #333;
+            margin: 0;
+        }
+        
+        .paper-alert .msg {
+            margin-top: 6px;
+            margin-left: 32px;
+            font-size: 14px;
+            color: #555;
+            line-height: 1.4;
+        }
+        
+        .paper-alert .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: rgba(0,0,0,0.05);
+            border-radius: 50%;
+            color: #666;
+            transition: all 0.2s;
+            z-index: 5;
+        }
+        
+        .paper-alert .close-btn:hover {
+            background: rgba(0,0,0,0.1);
+            color: #333;
+            transform: rotate(90deg);
+        }
+        
+        .alert-btn {
+            position: fixed;
+            top: 7rem;
+            right: 2.5rem;
+            z-index: 1201;
+            font-size: 0.9rem;
+            padding: 0.7rem 1.5rem;
+            border-radius: 5px;
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            cursor: pointer;
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+        }
+        
+        .alert-btn:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
+        }
+        
+        .paper-lines {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+            linear-gradient(to bottom, transparent 0%, transparent 98%, #e0e0e0 99%, transparent 100%);
+            background-size: 100% 24px;
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        .handwritten {
+            font-family: 'Segoe Script', 'Bradley Hand', cursive;
+            transform: rotate(-1deg);
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="paper-alert hide" id="paperAlert">
+        <div class="paper-pin"></div>
+        <div class="paper-clip"></div>
+        <div class="paper-lines"></div>
+        <div class="paper-alert-content">
+          <div class="alert-icon">
+            <i class="fas fa-exclamation-circle" id="alertIcon"></i>
+            <h4 class="alert-title" id="alertTitle">Authentication Required</h4>
+          </div>
+          <div class="msg handwritten" id="alertMessage">You must be Logged In to continue!</div>
+          <div class="close-btn">
+            <i class="fas fa-times"></i>
+          </div>
+        </div>
+    </div>
+    
+    <div class="header">
+        <h1>Customer Feedback</h1>
+        <div class="header-underline"></div>
+        <p>Help us improve our service by sharing your experience</p>
+    </div>
+    
+    <form class="form-container" id="feedbackForm">
+        <div class="form-section-title">
+            <div class="section-number">01</div>
+            <h2 class="section-title">Your Information</h2>
+        </div>
+        
+        <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" class="form-control" placeholder="Enter your name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" class="form-control" placeholder="Enter your email" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" class="form-control" placeholder="Enter your phone number">
+        </div>
+        
+        <div class="form-section-title">
+            <div class="section-number">02</div>
+            <h2 class="section-title">Your Experience</h2>
+        </div>
+        
+        <div class="form-group">
+            <label>How would you rate your overall experience?</label>
+            <div class="rating">
+                <input type="radio" name="rating" id="star1" value="1">
+                <label for="star1">1</label>
+                
+                <input type="radio" name="rating" id="star2" value="2">
+                <label for="star2">2</label>
+                
+                <input type="radio" name="rating" id="star3" value="3">
+                <label for="star3">3</label>
+                
+                <input type="radio" name="rating" id="star4" value="4">
+                <label for="star4">4</label>
+                
+                <input type="radio" name="rating" id="star5" value="5">
+                <label for="star5">5</label>
+            </div>
+        </div>
+        
+        <div class="form-section-title">
+            <div class="section-number">03</div>
+            <h2 class="section-title">Your Feedback</h2>
+        </div>
+        
+        <div class="form-group">
+            <label for="comments">Please share your thoughts or suggestions</label>
+            <textarea id="comments" class="form-control" placeholder="Your feedback is valuable to us..." required></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="improvements">How can we improve our service?</label>
+            <textarea id="improvements" class="form-control" placeholder="Any suggestions for improvement..."></textarea>
+        </div>
+        
+        <button type="submit" class="submit-btn" id="submitBtn">Submit Feedback</button>
+    </form>
+
+
+    <script>
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM fully loaded");
+            
+            // Get the form element with ID
+            const form = document.getElementById('feedbackForm');
+            console.log("Form element:", form);
+            
+            // Function to show the paper alert
+            function showPaperAlert(message, title = "Alert", icon = "fa-exclamation-circle", duration = 7000) {
+                console.log("Showing alert:", message);
+                const paperAlert = document.getElementById('paperAlert');
+                const alertMessage = document.getElementById('alertMessage');
+                const alertTitle = document.getElementById('alertTitle');
+                const alertIcon = document.getElementById('alertIcon');
+                
+                // Set custom message, title and icon
+                alertMessage.textContent = message;
+                alertTitle.textContent = title;
+                
+                // Update the icon class
+                alertIcon.className = ''; // Clear existing classes
+                alertIcon.classList.add('fas', icon);
+                
+                // Show the alert
+                paperAlert.classList.remove("hide");
+                paperAlert.classList.add("show", "showAlert");
+                
+                // Auto-hide after specified duration
+                setTimeout(() => {
+                    hideAlert();
+                }, duration);
+            }
+              
+            // Function to hide the alert with animation
+            function hideAlert() {
+                console.log("Hiding alert");
+                const paperAlert = document.getElementById('paperAlert');
+                paperAlert.classList.remove("show");
+                paperAlert.classList.add("hide");
+                setTimeout(() => {
+                    paperAlert.classList.remove("showAlert");
+                }, 500);
+            }
+            
+            // Set up close button functionality
+            document.querySelector('#paperAlert .close-btn').addEventListener('click', function() {
+                hideAlert();
+            });
+            
+            
+            // Add event listener for form submission
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    console.log("Form submitted");
+                    showPaperAlert(
+                        "Thank you for your feedback!",
+                        "Submission Successful", 
+                        "fa-check-circle", 
+                        7000
+                    );
+                });
+            } else {
+                console.error("Form element not found!");
+            }
+        });
+    </script>
+</body>
+</html>

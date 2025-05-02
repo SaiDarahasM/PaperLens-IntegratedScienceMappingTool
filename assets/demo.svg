@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#f8f9fa" rx="5" ry="5"/>
+  <rect x="50" y="70" width="700" height="480" fill="#fff" stroke="#ddd" stroke-width="2" rx="10" ry="10"/>
+  <ellipse cx="400" cy="300" rx="330" ry="220" fill="#f0f0f0" stroke="#999" stroke-width="2"/>
+  <text x="400" y="120" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="#666">Scientific Literature Analysis</text>
+  <circle cx="320" cy="300" r="150" fill="#fff3e6" stroke="#ffaa80" stroke-width="2" fill-opacity="0.7"/>
+  <text x="260" y="230" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="#cc5200">Bibliometrics</text>
+  <text x="210" y="250" font-family="Arial, sans-serif" font-size="11" fill="#555">• Citation analysis</text>
+  <text x="210" y="270" font-family="Arial, sans-serif" font-size="11" fill="#555">• Author productivity</text>
+  <text x="210" y="290" font-family="Arial, sans-serif" font-size="11" fill="#555">• Journal impact factors</text>
+  <circle cx="480" cy="300" r="150" fill="#e6f9e6" stroke="#80c780" stroke-width="2" fill-opacity="0.7"/>
+  <text x="535" y="230" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="#2e7d32">Scientometrics</text>
+  <text x="490" y="250" font-family="Arial, sans-serif" font-size="11" fill="#555">• Research trends</text>
+  <text x="490" y="270" font-family="Arial, sans-serif" font-size="11" fill="#555">• Collaboration networks</text>
+  <text x="490" y="290" font-family="Arial, sans-serif" font-size="11" fill="#555">• Science policy impacts</text>
+  <text x="400" y="260" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#555">Shared Methods</text>
+  <text x="350" y="280" font-family="Arial, sans-serif" font-size="11" fill="#555">• Publication counting</text>
+  <text x="350" y="300" font-family="Arial, sans-serif" font-size="11" fill="#555">• Network analysis</text>
+  <text x="350" y="320" font-family="Arial, sans-serif" font-size="11" fill="#555">• Statistical techniques</text>
+  <ellipse cx="400" cy="390" rx="100" ry="60" fill="#e6e6fa" stroke="#9370db" stroke-width="2" fill-opacity="0.9"/>
+  <text x="400" y="360" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#5e35b1">Science Mapping</text>
+  <circle cx="330" cy="380" r="2" fill="black"/>
+  <circle cx="470" cy="380" r="2" fill="black"/>
+  <text x="380" y="400" font-family="Arial, sans-serif" font-size="10" fill="#555" text-anchor="end">Co-citation maps</text>
+  <text x="420" y="400" font-family="Arial, sans-serif" font-size="10" fill="#555" text-anchor="start">Topic evolution</text>
+  <text x="440" y="410" font-family="Arial, sans-serif" font-size="10" fill="#555" text-anchor="start">maps</text>
+</svg>

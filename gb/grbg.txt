@@ -1,0 +1,348 @@
+import json
+import re
+import spacy
+from sklearn.feature_extraction.text import TfidfVectorizer
+import matplotlib.pyplot as plt
+from sentence_transformers import SentenceTransformer
+from collections import defaultdict
+import umap.umap_ as umap
+import hdbscan
+from sklearn.metrics import silhouette_score
+import nltk
+from nltk.corpus import stopwords
+
+# Ensure NLTK resources are downloaded
+nltk.download('stopwords')
+nltk.download('punkt')
+
+# Step 1: Load data from JSON file
+def load_data(json_file):
+    with open(json_file, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return data
+
+# Step 2: Extract abstracts and titles from the JSON data
+def extract_data(data):
+    abstracts, titles = [], []
+    for paper in data:
+        if 'abstract' in paper and paper['abstract']:
+            abstracts.append(paper['abstract'])
+            titles.append(paper.get('title', "No Title"))
+    return abstracts, titles
+
+# Step 3: Preprocess text (remove stopwords, punctuation, etc.)
+def preprocess_text(text):
+    # Convert to lowercase
+    text = text.lower()
+    # Remove punctuation and numbers
+    text = re.sub(r'[^\w\s]', '', text)
+    text = re.sub(r'\d+', '', text)
+    # Tokenize
+    tokens = nltk.word_tokenize(text)
+    # Remove generic stopwords
+    stop_words = set(stopwords.words('english'))
+    tokens = [word for word in tokens if word not in stop_words]
+    return " ".join(tokens)
+
+# Step 4: Extract noun phrases
+def extract_noun_phrases(text, nlp):
+    doc = nlp(text)
+    noun_phrases = [chunk.text.lower() for chunk in doc.noun_chunks]
+    return " ".join(noun_phrases)
+
+# Step 5: Generate BERT Embeddings
+def generate_bert_embeddings(abstracts):
+    model = SentenceTransformer('allenai/scibert_scivocab_uncased')
+    embeddings = model.encode(abstracts)
+    return embeddings
+
+# Step 6: Reduce Dimensionality Using UMAP
+def reduce_dimensions(embeddings):
+    reducer = umap.UMAP(n_components=2, random_state=42)
+    reduced_embeddings = reducer.fit_transform(embeddings)
+    return reduced_embeddings
+
+# Step 7: Perform HDBSCAN Clustering
+def perform_hdbscan_clustering(reduced_embeddings):
+    clusterer = hdbscan.HDBSCAN(min_cluster_size=3, min_samples=1, metric='euclidean')
+    cluster_labels = clusterer.fit_predict(reduced_embeddings)
+    return cluster_labels, clusterer
+
+# Step 8: Visualize Clusters Using UMAP
+def visualize_clusters_umap(reduced_embeddings, cluster_labels):
+    plt.figure(figsize=(10, 8))
+    unique_labels = set(cluster_labels)
+    for label in unique_labels:
+        if label == -1:  # Noise points
+            color = 'gray'
+            alpha = 0.3
+        else:
+            color = plt.cm.tab10(label % 10)
+            alpha = 0.7
+        cluster_points = reduced_embeddings[cluster_labels == label]
+        plt.scatter(cluster_points[:, 0], cluster_points[:, 1], label=f"Cluster {label}", color=color, alpha=alpha)
+    plt.legend()
+    plt.title("Abstract Clusters (UMAP Visualization)")
+    plt.xlabel("UMAP Component 1")
+    plt.ylabel("UMAP Component 2")
+    plt.show()
+
+# Step 9: Assign Papers to Clusters and Generate Category Names
+def assign_papers_to_clusters(titles, abstracts, cluster_labels):
+    clusters = defaultdict(list)
+    for i, label in enumerate(cluster_labels):
+        cluster_name = f"Cluster {label + 1}" if label != -1 else "Noise"
+        clusters[cluster_name].append((titles[i], abstracts[i]))
+
+    # Generate category names based on top keywords in each cluster
+    vectorizer = TfidfVectorizer(max_df=0.95, min_df=2, stop_words='english', ngram_range=(1, 3))
+    category_names = {}
+    for cluster, papers_in_cluster in clusters.items():
+        if cluster == "Noise":
+            category_names[cluster] = "Uncategorized"
+            continue
+        abstracts_in_cluster = [paper[1] for paper in papers_in_cluster]
+        dtm = vectorizer.fit_transform(abstracts_in_cluster)
+        feature_names = vectorizer.get_feature_names_out()
+        word_freq = dtm.sum(axis=0).A1
+        top_keywords = [feature_names[i] for i in word_freq.argsort()[-5:][::-1]]  # Top 5 keywords
+        category_names[cluster] = " ".join(top_keywords)
+
+    return clusters, category_names
+
+# Main function
+def main(json_file):
+    # Load data
+    data = load_data(json_file)
+    abstracts, titles = extract_data(data)
+
+    # Preprocess abstracts
+    preprocessed_abstracts = [preprocess_text(abstract) for abstract in abstracts]
+
+    # Initialize spaCy for noun phrase extraction
+    nlp = spacy.load("en_core_web_sm")
+
+    # Extract noun phrases
+    noun_phrases = [extract_noun_phrases(abstract, nlp) for abstract in preprocessed_abstracts]
+
+    # Generate BERT embeddings
+    embeddings = generate_bert_embeddings(noun_phrases)
+
+    # Reduce dimensions using UMAP
+    reduced_embeddings = reduce_dimensions(embeddings)
+
+    # Perform HDBSCAN clustering
+    cluster_labels, clusterer = perform_hdbscan_clustering(reduced_embeddings)
+
+    # Visualize clusters using UMAP
+    visualize_clusters_umap(reduced_embeddings, cluster_labels)
+
+    # Assign papers to clusters and generate category names
+    clusters, category_names = assign_papers_to_clusters(titles, abstracts, cluster_labels)
+
+    # Print identified research trends (broader categories)
+    print("\n--- Identified Research Trends ---")
+    for cluster, name in category_names.items():
+        print(f"\nCategory: {name}")
+        print(f"{cluster}:")
+        for title, _ in clusters[cluster][:5]:  # Show first 5 titles per category
+            print(f"- {title}")
+
+# Run the script
+if __name__ == "__main__":
+    json_file = "papers_metadata.json"  # Replace with your JSON file path
+    main(json_file)
+
+
+
+
+
+
+
+
+
+
+
+    import requests
+import json
+
+def search_papers(query, max_papers=50):
+    base_url = "https://api.semanticscholar.org/graph/v1/paper/search"
+    params = {
+        "query": query,
+        "limit": max_papers,
+        "fields": "title,authors,year,abstract,url"
+    }
+
+    response = requests.get(base_url, params=params)
+
+    if response.status_code == 200:
+        papers = response.json().get("data", [])
+        return papers
+    else:
+        print(f"Error: {response.status_code} - {response.text}")
+        return []
+
+# Example usage
+query = "ai in lung disease prediction"
+papers = search_papers(query, max_papers=50)
+
+# Store results in JSON format
+papers_metadata = []
+for paper in papers:
+    title = paper.get("title", "N/A")
+
+    # Ensure authors list exists
+    authors_list = paper.get("authors")
+    if authors_list is None:
+        authors = "N/A"
+    else:
+        authors = [author["name"] for author in authors_list if "name" in author]
+
+    year = paper.get("year", "N/A")
+    abstract = paper.get("abstract", "N/A")
+    url = paper.get("url", "N/A")
+
+    papers_metadata.append({
+        "title": title,
+        "authors": authors,
+        "year": year,
+        "abstract": abstract,
+        "url": url
+    })
+
+# Save to JSON file
+with open("papers_metadata4.json", "w", encoding="utf-8") as f:
+    json.dump(papers_metadata, f, indent=4, ensure_ascii=False)
+
+print(f"Scraped metadata for {len(papers_metadata)} papers. Saved to 'papers_metadata.json'.")
+
+
+
+
+
+
+import json
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+import spacy
+import plotly.express as px
+import sys
+sys.stdout.reconfigure(encoding='utf-8')  # Ensure the output encoding is UTF-8
+# Load data from JSON file
+def load_data(file_path):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return pd.DataFrame(data)
+
+# Preprocess text
+def preprocess_text(texts):
+    nlp = spacy.load("en_core_web_sm")
+    processed_texts = []
+    for text in texts:
+        if text is None or text.strip() == "":  # Check for None or empty strings
+            processed_texts.append("")  # Replace missing abstracts with an empty string
+            continue
+        doc = nlp(text.lower())
+        tokens = [token.lemma_ for token in doc if not token.is_stop and token.is_alpha]
+        processed_texts.append(" ".join(tokens))
+    return processed_texts
+
+# Perform topic modeling and clustering
+def cluster_papers(data, num_clusters=5):
+    # Identify rows with missing abstracts
+    missing_abstract_mask = data['abstract'].isnull() | (data['abstract'].str.strip() == "")
+    missing_papers = data[missing_abstract_mask]  # Papers with missing abstracts
+    valid_papers = data[~missing_abstract_mask]   # Papers with valid abstracts
+    
+    # Preprocess abstracts for valid papers
+    processed_abstracts = preprocess_text(valid_papers['abstract'])
+    
+    # Vectorize text using TF-IDF
+    vectorizer = TfidfVectorizer(max_features=1000)
+    X = vectorizer.fit_transform(processed_abstracts)
+    
+    # Apply K-Means clustering on valid papers
+    kmeans = KMeans(n_clusters=num_clusters, random_state=42)
+    valid_papers['cluster'] = kmeans.fit_predict(X)
+    
+    # Name clusters using top terms
+    order_centroids = kmeans.cluster_centers_.argsort()[:, ::-1]
+    terms = vectorizer.get_feature_names_out()
+    cluster_names = {}
+    for i in range(num_clusters):
+        top_terms = [terms[ind] for ind in order_centroids[i, :5]]
+        cluster_names[i] = " ".join(top_terms)
+    
+    # Assign cluster names to valid papers
+    valid_papers['cluster_name'] = valid_papers['cluster'].map(cluster_names)
+    
+    # Handle missing papers
+    if not missing_papers.empty:
+        # Extract keywords from titles for missing papers
+        missing_papers['cluster'] = num_clusters  # Assign to a new cluster
+        missing_papers['cluster_name'] = "Others"
+        
+        # Combine valid and missing papers
+        data = pd.concat([valid_papers, missing_papers], ignore_index=True)
+    else:
+        data = valid_papers
+    
+    return data
+
+# Visualize clusters using Plotly
+def visualize_clusters(data):
+    # Count the number of papers in each cluster
+    cluster_counts = data['cluster_name'].value_counts().reset_index()
+    cluster_counts.columns = ['Cluster', 'Count']
+    
+    # Create an interactive bar chart
+    fig = px.bar(
+        cluster_counts,
+        x='Cluster',
+        y='Count',
+        title="Number of Papers in Each Cluster",
+        labels={'Cluster': 'Cluster Name', 'Count': 'Number of Papers'},
+        color='Count',  # Add color based on count for better visualization
+        color_continuous_scale='Viridis'  # Use an attractive color scale
+    )
+    
+    # Add hover information to show cluster names
+    fig.update_traces(hovertemplate="Cluster: %{x}<br>Papers: %{y}")
+    
+    # Customize layout for better aesthetics
+    fig.update_layout(
+        xaxis_title="Cluster Name",
+        yaxis_title="Number of Papers",
+        font=dict(size=14),
+        hoverlabel=dict(bgcolor="white", font_size=12),
+        plot_bgcolor='rgba(0,0,0,0)',  # Transparent background
+        paper_bgcolor='rgba(0,0,0,0)'   # Transparent background
+    )
+    
+    # Show the plot
+    fig.show()
+
+# Main function
+def main():
+    # Load data
+    file_path = "papers_metadata.json"
+    data = load_data(file_path)
+    
+    # Cluster papers
+    clustered_data = cluster_papers(data, num_clusters=5)
+    
+    # Group papers by cluster
+    grouped_papers = clustered_data.groupby('cluster_name')['title'].apply(list).to_dict()
+    
+    # Print results
+    for cluster, titles in grouped_papers.items():
+        print(f"Cluster: {cluster}")
+        print(f"Titles: {titles}\n")
+    
+    # Visualize clusters
+    visualize_clusters(clustered_data)
+
+if __name__ == "__main__":
+    main()

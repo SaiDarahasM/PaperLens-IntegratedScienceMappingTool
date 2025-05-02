@@ -1,0 +1,548 @@
+:root{
+    --secondary-color: #fcee0a;
+    --text-color: #333;
+    --bg:#4dd9ca;
+}
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color:var( --text-color);
+}
+.concept-label {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+#container {
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+svg {
+    width: 100%;
+    height: 100%;
+}
+
+.node {
+    cursor: pointer;
+}
+
+.link {
+    stroke-opacity: 0.6;
+}
+
+.tooltip {
+    position: absolute;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.95);
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    pointer-events: none;
+    font-size: 14px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    max-width: 300px;
+    line-height: 1.4;
+    z-index: 1000;
+}
+
+.tooltip strong {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 15px;
+    color: #333;
+}
+
+.tooltip em {
+    color: #4285f4;
+    font-style: italic;
+}
+
+#paperConcepts {
+    margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.controls {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background-color: var(--bg);
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+    max-height: 80vh;
+    overflow-y: auto;
+    border: 8px solid #000; /* Add this line for a black border */
+}
+
+.control-section {
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+    margin-top: 10px;
+}
+
+.control-section h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #333;
+    font-weight: bolder;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+.controls label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-style: italic;
+    font-family:'Times New Roman', Times, serif;
+}
+
+.controls input {
+    width: 100px;
+}
+
+button {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background-color: black;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #3b78e7;
+}
+
+/* Improved legend styling */
+.legend {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    background-color: var(--bg);
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    max-width: 250px;
+    border: 8px solid #000; /* Add this line for a black border */
+}
+
+.legend h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    height: 24px; /* Standardize height for all items */
+    font-family: 'Times New Roman', Times, serif;
+}
+
+/* Standardize all legend indicators */
+.legend-indicator {
+    width: 32px; /* Increased from 24px */
+    height: 32px; /* Increased from 24px */
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Specific styles for different shapes */
+.legend-circle {
+    border-radius: 50%;
+}
+
+.legend-circle.main {
+    width: 16px;
+    height: 16px;
+    background-color: #4285f4;
+}
+
+.legend-circle.referenced {
+    width: 12px;
+    height: 12px;
+    background-color: #34a853;
+}
+
+.legend-circle.citing {
+    width: 12px;
+    height: 12px;
+    background-color: #ea4335;
+}
+
+.legend-diamond {
+    width: 12px;
+    height: 12px;
+    background-color: #fbbc05;
+    transform: rotate(45deg);
+}
+
+.legend-star svg {
+    width: 20px;
+    height: 20px;
+}
+
+.legend-arrow {
+    width: 50px;
+    height: 20px;
+}
+
+.legend-info {
+    font-weight: bold;
+    color: #555;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+.legend-info p {
+    margin: 5px 0;
+}
+
+
+#loadingIndicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: none;
+}
+
+/* New styles for paper details panel */
+.paper-details-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: white;
+    width: 350px;
+    max-height: 80vh;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 200;
+    display: none;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background-color: #4285f4;
+    color: white;
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+}
+
+.panel-content {
+    padding: 15px;
+    overflow-y: auto;
+    max-height: calc(80vh - 50px);
+}
+
+#paperInfo {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+#paperTitle {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #333;
+}
+
+#paperType, #paperCitations {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #555;
+}
+
+#paperConcepts {
+    margin-top: 10px;
+}
+
+.concept-tag {
+    display: inline-block;
+    padding: 4px 8px;
+    margin: 3px;
+    background-color: #e8f0fe;
+    color: #4285f4;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.paper-link {
+    margin-top: 15px;
+}
+
+.paper-link a {
+    color: #4285f4;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.paper-link a:hover {
+    text-decoration: underline;
+}
+
+.paper-lists {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.paper-list h5 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #333;
+}
+
+.paper-list ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.paper-list li {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.paper-list li:last-child {
+    border-bottom: none;
+}
+
+.paper-list a {
+    color: #4285f4;
+    text-decoration: none;
+    font-size: 13px;
+    display: block;
+}
+
+.paper-list a:hover {
+    text-decoration: underline;
+}
+
+.paper-type-label {
+    display: inline-block;
+    padding: 2px 6px;
+    margin-right: 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: white;
+}
+
+.paper-type-main {
+    background-color: #4285f4;
+}
+
+.paper-type-reference {
+    background-color: #34a853;
+}
+
+.paper-type-citation {
+    background-color: #ea4335;
+}
+
+.paper-type-bridge {
+    background-color: #fbbc05;
+}
+
+/* Make the legend move up when details panel is open */
+.paper-details-panel.active + .legend {
+    top: calc(80vh + 30px);
+}
+
+/* Selected node styling */
+.node.selected circle,
+.node.selected rect,
+.node.selected path {
+    stroke: #000;
+    stroke-width: 2px;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .paper-details-panel {
+        width: 100%;
+        max-width: none;
+        top: auto;
+        bottom: 0;
+        right: 0;
+        max-height: 50vh;
+        border-radius: 5px 5px 0 0;
+        transform: translateY(100%);
+    }
+    
+    .paper-details-panel.active {
+        transform: translateY(0);
+    }
+    
+    .controls {
+        max-width: 250px;
+    }
+    
+    .legend {
+        max-width: 200px;
+    }
+}
+/* 
+/* Add to gra.css */
+/* .loading-section {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    width: 300px;
+}  */
+
+#statusMessage {
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.progress-container {
+    width: 100%;
+    height: 10px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background-color: #4285f4;
+    transition: width 0.3s ease;
+}
+
+
+
+
+
+.time-navigation {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--bg);
+    padding: 12px 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    z-index: 100;
+    border: 8px solid #000; /* Add this line for a black border */
+}
+
+.time-navigation button {
+    margin: 0 10px;
+    padding: 8px 12px;
+    background-color: black;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.time-navigation button:disabled {
+    background-color: black;
+    cursor: not-allowed;
+}
+
+.time-indicator {
+    font-weight: bold;
+    margin: 0 15px;
+}
+
+.time-slider-container {
+    display: flex;
+    flex-direction: column;
+    width: 400px;
+}
+
+.time-slider {
+    width: 100%;
+    margin: 5px 0;
+}
+
+.time-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #666;
+}
+
+.time-loader {
+    height: 3px;
+    background-color: #4285f4;
+    width: 0%;
+    transition: width 0.3s;
+    margin-top: 5px;
+}
+
+/* Animation for transitions */
+.node.exiting {
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+.node.entering {
+    opacity: 0;
+    animation: fadeIn 0.5s forwards;
+    animation-delay: 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

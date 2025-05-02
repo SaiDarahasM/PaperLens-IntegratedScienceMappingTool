@@ -1,0 +1,54 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Lens Inner Circle with subtle gradient -->
+  <defs>
+    <linearGradient id="lensGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e9f2ff" />
+      <stop offset="100%" stop-color="#d1e3fb" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Paper/Document Elements -->
+  <g transform="translate(65, 90)">
+    <!-- Papers at different angles -->
+    <rect x="0" y="0" width="70" height="90" rx="4" ry="4" fill="#ffffff" stroke="#335c81" stroke-width="2" transform="rotate(-15)" />
+    <rect x="20" y="-15" width="70" height="90" rx="4" ry="4" fill="#ffffff" stroke="#335c81" stroke-width="2" transform="rotate(5)" />
+    <rect x="50" y="-5" width="70" height="90" rx="4" ry="4" fill="#ffffff" stroke="#335c81" stroke-width="2" transform="rotate(20)" />
+  </g>
+  
+  <!-- Lens Element -->
+  <circle cx="155" cy="155" r="75" fill="url(#lensGradient)" stroke="#4a6fa5" stroke-width="3" opacity="0.85" />
+  
+  <!-- Connections representing mapping -->
+  <g stroke="#5e81ac" stroke-width="2.5">
+    <circle cx="100" cy="140" r="5" fill="#5e81ac" />
+    <circle cx="130" cy="180" r="4" fill="#5e81ac" />
+    <circle cx="180" cy="120" r="6" fill="#5e81ac" />
+    <circle cx="210" cy="160" r="4" fill="#5e81ac" />
+    <circle cx="150" cy="100" r="5" fill="#5e81ac" />
+    
+    <line x1="100" y1="140" x2="130" y2="180" />
+    <line x1="130" y1="180" x2="180" y2="120" />
+    <line x1="180" y1="120" x2="210" y2="160" />
+    <line x1="180" y1="120" x2="150" y2="100" />
+    <line x1="150" y1="100" x2="100" y2="140" />
+  </g>
+  
+  <!-- Magnifying Element -->
+  <circle cx="190" cy="190" r="35" fill="none" stroke="#335c81" stroke-width="6" />
+  <line x1="215" y1="215" x2="235" y2="235" stroke="#335c81" stroke-width="8" stroke-linecap="round" />
+  
+  <!-- Abstract Data Visualization Elements -->
+  <g transform="translate(125, 135)">
+    <circle cx="0" cy="0" r="9" fill="#88c0d0" opacity="0.8" />
+    <circle cx="45" cy="-20" r="7" fill="#88c0d0" opacity="0.8" />
+    <circle cx="30" cy="35" r="8" fill="#88c0d0" opacity="0.8" />
+    <circle cx="-25" cy="25" r="6" fill="#88c0d0" opacity="0.8" />
+    
+    <line x1="0" y1="0" x2="45" y2="-20" stroke="#5e81ac" stroke-width="2" opacity="0.7" />
+    <line x1="0" y1="0" x2="30" y2="35" stroke="#5e81ac" stroke-width="2" opacity="0.7" />
+    <line x1="0" y1="0" x2="-25" y2="25" stroke="#5e81ac" stroke-width="2" opacity="0.7" />
+  </g>
+  
+  <!-- Light Reflection on Lens -->
+  <path d="M120,120 Q155,100 190,120" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.6" />
+</svg>

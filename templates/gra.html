@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Citation Network</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link rel="stylesheet" href="/static/css/gra.css">
+</head>
+<body>
+    <div id="container"></div>
+    
+   <!-- Replace the file-input div with this loading section -->
+<div class="loading-section">
+    <div id="statusMessage">Loading citation network...</div>
+    <div class="progress-container">
+        <div id="loadingProgress" class="progress-bar"></div>
+    </div>
+</div>
+
+<div class="time-navigation">
+    <button id="prevTimeButton" disabled>← Previous</button>
+    <div class="time-slider-container">
+        <input type="range" id="timeSlider" class="time-slider" min="0" max="0" value="0" step="1">
+        <div class="time-labels">
+            <span id="startTimeLabel">Start Date</span>
+            <span id="endTimeLabel">End Date</span>
+        </div>
+        <div id="timeLoader" class="time-loader"></div>
+    </div>
+    <div class="time-indicator" id="currentTimePeriod">Loading time range...</div>
+    <button id="nextTimeButton">Next →</button>
+</div>
+
+
+<div class="controls">
+        <div class="control-section">
+            <h4>Network Physics</h4>
+            <label>
+                Link Distance:
+                <input type="range" id="linkDistanceSlider" min="20" max="200" value="80">
+                <span id="linkDistanceValue">80</span>
+            </label>
+            <label>
+                Charge Strength:
+                <input type="range" id="chargeSlider" min="-500" max="-10" value="-120">
+                <span id="chargeValue">-120</span>
+            </label>
+            <label>
+                Network Compactness:
+                <input type="range" id="gravitySlider" min="0.01" max="0.5" step="0.01" value="0.1">
+                <span id="gravityValue">0.1</span>
+            </label>
+        </div>
+        
+        <div class="control-section">
+            <h4>Node Sizing</h4>
+            <label>
+                Main Papers:
+                <input type="range" id="mainNodeScaleSlider" min="0.5" max="3.0" step="0.1" value="1.0">
+                <span id="mainNodeScaleValue">1.0</span>
+            </label>
+            <label>
+                Bridge Papers:
+                <input type="range" id="bridgeNodeScaleSlider" min="0.5" max="3.0" step="0.1" value="1.0">
+                <span id="bridgeNodeScaleValue">1.0</span>
+            </label>
+            <label>
+                Normal Papers:
+                <input type="range" id="normalNodeScaleSlider" min="0.5" max="3.0" step="0.1" value="1.0">
+                <span id="normalNodeScaleValue">1.0</span>
+            </label>
+        </div>
+        
+        <div class="control-section">
+            <h4>View Controls</h4>
+            <button id="resetButton">Reset View</button>
+            <button id="centerViewButton">Center View</button>
+        </div>
+    </div>
+</div>
+
+    
+    <div class="legend">
+        <h3>Legend</h3>
+        <div class="legend-item">
+            <div class="legend-indicator">
+                <div class="legend-circle main"></div>
+            </div>
+            <span>Main Paper (Circle)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-indicator legend-star">
+                <svg width="20" height="20" viewBox="0 0 24 24">
+                    <path d="M12,5 L13.25,9.25 L17.5,9.25 L14.12,11.75 L15.25,16 L12,13.5 L8.75,16 L9.88,11.75 L6.5,9.25 L10.75,9.25 Z" fill="#4285f4"></path>
+                </svg>
+            </div>
+            <span>Main Bridge Paper (Star)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-indicator">
+                <div class="legend-circle referenced"></div>
+            </div>
+            <span>Referenced Paper (Circle)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-indicator">
+                <div class="legend-circle citing"></div>
+            </div>
+            <span>Citing Paper (Circle)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-indicator">
+                <div class="legend-diamond"></div>
+            </div>
+            <span>Bridge Paper (Diamond)</span>
+        </div>
+        <div class="legend-info">
+            <p>Node size also reflects importance:</p>
+            <p>• Main papers: Size may increase with citation count</p>
+            <p>• All node types can be scaled using the controls</p>
+        </div>
+        <div class="legend-item">
+            <div class="legend-indicator legend-arrow">
+                <svg width="50" height="20">
+                    <defs>
+                        <marker id="legend-arrow" viewBox="0 -5 10 10" refX="8" refY="0" 
+                                markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M0,-5L10,0L0,5" fill="#999"></path>
+                        </marker>
+                    </defs>
+                    <line x1="5" y1="10" x2="45" y2="10" stroke="#999" stroke-width="2" marker-end="url(#legend-arrow)"></line>
+                </svg>
+            </div>
+            <span>Citation Direction</span>
+        </div>
+    </div>
+    
+    <!-- New Paper Details Sidebar -->
+    <div id="paperDetailsPanel" class="paper-details-panel">
+        <div class="panel-header">
+            <h3>Paper Details</h3>
+            <button id="closePanelButton" class="close-button">×</button>
+        </div>
+        <div class="panel-content">
+            <div id="paperInfo">
+                <h4 id="paperTitle">Select a paper to view details</h4>
+                <p id="paperType"></p>
+                <p id="paperCitations"></p>
+                <div id="paperConcepts"></div>
+                <div class="paper-link">
+                    <a id="openAlexLink" href="#" target="_blank">View on OpenAlex</a>
+                </div>
+            </div>
+            
+            <div class="paper-lists">
+                <div class="paper-list">
+                    <h5>Citing Papers</h5>
+                    <ul id="citingPapersList"></ul>
+                </div>
+                <div class="paper-list">
+                    <h5>Referenced Papers</h5>
+                    <ul id="referencedPapersList"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- <div id="loadingIndicator">Loading data...</div> -->
+    
+    <div class="tooltip" style="display: none;"></div>
+
+    <script type="text/javascript">
+        window.__INITIAL_DATA__= JSON.parse(`{{ data | safe }}`);
+    </script>
+    <script src="/static/js/gra.js"></script>
+    
+</body>
+</html>

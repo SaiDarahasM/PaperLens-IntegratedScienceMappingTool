@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaperLens</title>
+    <link rel="stylesheet" href="/static/css/homestyle.css">
+    <link rel="stylesheet" href="/static/css/profilepage.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+   
+</head>
+<body>
+    <div id="loading-overlay" class="loading-overlay">
+      <div class="loading-container">
+        <div class="cyclone" id="cyclone"></div>
+        <div class="ground"></div>
+        <div class="loading-text" id="loading-text">Loading...</div>
+      </div>
+    </div>
+    <div class="paper-alert hide" id="paperAlert">
+        <div class="paper-pin"></div>
+        <div class="paper-clip"></div>
+        <div class="paper-lines"></div>
+        <div class="paper-alert-content">
+          <div class="alert-icon">
+            <i class="fas fa-exclamation-circle" id="alertIcon"></i>
+            <h4 class="alert-title" id="alertTitle">Authentication Required</h4>
+          </div>
+          <div class="msg handwritten" id="alertMessage">You must be Logged In to continue!</div>
+          <div class="close-btn">
+            <i class="fas fa-times"></i>
+          </div>
+        </div>
+      </div>
+    <header>
+        <div class="header-content">
+            <div class="logo-container">
+            <img src="/assets/logo.svg" style="height: 70px; width: auto;" alt="PaperLens Logo">
+            <h1 id="appname">PaperLens</h1>
+        </div>
+            <nav>
+                <a href="#interactive-book">Features</a>
+                <a href="#architecture ">Solutions</a>
+                <a href="#contacts">Contacts</a>
+                <a href="#feedback">Feedback</a>
+                <a href="/login"><button class="sign-in-btn" id="signInBtn">Sign In</button></a>
+                <a id="userProfile" class="profile-trigger">
+                    <span id="userName">dara</span>
+                    <img src="/assets/userPhoto.png" alt="Profile Picture" class="profile-pic" id="profile-pic">
+                    <i class="fas fa-chevron-down"></i>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="profile-container" id="profileContainer">  
+        <div class="profile-overlay" id="profileOverlay"></div>
+        <div class="profile-dropdown" id="profileDropdown">
+            <div class="profile-header">
+                <div class="profile-cover-photo"></div>
+                <div class="profile-avatar-container">
+                    <img src="/assets/default-user.jpg" alt="Profile Picture" id="profileAvatar">
+                </div>
+                <h2 id="profileHeaderName">Welcome, Dara</h2>
+            </div>
+
+            <div class="profile-tabs">
+                <button class="tab-btn active" data-tab="personal">Personal Info</button>
+                <button class="tab-btn" data-tab="activity">Activity</button>
+            </div>
+
+            <div class="tab-content active" id="personal-tab">
+                <div class="profile-field">
+                    <label><i class="fas fa-user"></i> Name</label>
+                    <input type="text" id="profileName" placeholder="Enter your name" disabled>
+                    <span class="edit-icon" onclick="enableEdit('profileName')" >
+                        <img src="/assets/editicon.png" alt="Edit" class="edit-img"></span>
+                </div>
+                
+                <div class="profile-field">
+                    <label><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="profileEmail" disabled>
+                    <div class="verification-badge" id="emailVerified">
+                        <i class="fas fa-check-circle"></i> Verified
+                    </div>
+                </div>
+                
+                <div class="profile-field">
+                    <label><i class="fas fa-phone"></i> Phone No</label>
+                    <input type="text" id="profilePhone" placeholder="Enter phone number" disabled>
+                    <span class="edit-icon" onclick="enableEdit('profilePhone')">
+                        <img src="/assets/editicon.png" alt="Edit" class="edit-img"></span>
+                </div>
+                
+                <div class="profile-field">
+                    <label><i class="fas fa-map-marker-alt"></i> Address</label>
+                    <input type="text" id="profileAddress" placeholder="Enter address" disabled>
+                    <span class="edit-icon" onclick="enableEdit('profileAddress')">
+                        <img src="/assets/editicon.png" alt="Edit" class="edit-img">
+                    </span>
+                </div>
+                
+                <div class="profile-field">
+                    <label><i class="fas fa-briefcase"></i> Profession</label>
+                    <input type="text" id="profileProfession" placeholder="Enter profession" disabled>
+                    <span class="edit-icon" onclick="enableEdit('profileProfession')">
+                        <img src="/assets/editicon.png" alt="Edit" class="edit-img"></span>
+                </div>
+            </div>
+
+            
+
+            <div class="tab-content" id="activity-tab">
+                <div class="activity-summary">
+                    <div class="activity-stat">
+                        <i class="fas fa-search"></i>
+                        <span class="stat-value">32</span>
+                        <span class="stat-label">Searches</span>
+                    </div>
+                </div>
+
+                
+                
+                <h3 class="section-title">Recent Activity</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <h4>Research on Neural Networks</h4>
+                            <p>You searched for papers on neural networks in medicine</p>
+                            <span class="timeline-date"><i class="fas fa-clock"></i> 2 days ago</span>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <h4>Saved Article</h4>
+                            <p>You saved "Emerging Trends in AI Ethics"</p>
+                            <span class="timeline-date"><i class="fas fa-clock"></i> 1 week ago</span>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <h4>Profile Updated</h4>
+                            <p>You updated your professional information</p>
+                            <span class="timeline-date"><i class="fas fa-clock"></i> 2 weeks ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="save-btn" id="saveBtn"><i class="fas fa-save"></i> Save Changes</button>
+                <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <section class="hero">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <h2> Charting Research Trajectories and 
+            Academic Linkages</h2>
+        <div class="liquid-container">
+            <div class="liquid-word active" id="word1">Innovative</div>
+            <div class="liquid-word" id="word2">Dynamic</div>
+            <div class="liquid-word" id="word3">Effortless</div>
+            <div class="splash-container" id="splashContainer"></div>
+        </div>
+        <div class="search-container">
+            <div class="searchBox">
+                <input id="searchy" class="searchInput"type="text" name="" placeholder="Search">
+                <div class="filter-container">
+                    <select id="year-filter" class="year-filter">
+                      <option value="">Year</option>
+                    </select>
+                </div>
+                <img id="searchbtn" src="/assets/searchy.png" >
+            </div>
+            
+            <!-- <button id="searchbtn">Search </button> -->
+            <button id="nextBtn" style="display: none;" >Next</button>
+        </div>
+        <div class="feature-selection-container">
+          <div class="feature-selection">
+              <div data-text="Trend Analysis" data-feature="trends" style="--r:-15;" class="glass">
+                  <img src="/assets/trenzkj.png" alt="Trend Analysis" class="glass-icon" />
+              </div>
+                
+                
+              <div data-text="Citation Network" data-feature="citations" style="--r:-15;" class="glass">
+                  <img src="/assets/icons8-hub-100.png" alt="Citation Network Analysis" class="glass-icon" />
+              </div>
+              <div data-text="Venue & Publisher Analysis" data-feature="venues" style="--r:-15;" class="glass">
+                  <img src="/assets/trenzkj.png" alt="Venue & Publisher Analysis" class="glass-icon" />
+              </div>
+          </div>
+          <div class="selection-message" id="selectionMessage">
+            You've selected <span id="selectedFeature">Trend Analysis</span>. Click Search to continue.
+          </div>
+        </div>
+    </section>
+
+<section id="interactive-book" class="interactive-book">
+        <h2 class="header-title">Features</h2>
+        <div class="carousel-container" id="carousel-container">
+            <!-- HTML Fix - Corrected slide 6 transform -->
+            <div class="carousel" id="carousel">
+                <div class="slide" style="transform: rotateY(0deg) translateZ(630px);">
+                    <h4 class="card-title" style="color: aqua;font-family: 'Bungee Shade';">What Is Trend Analysis?</h4>
+                    <p class="card-text" style="color:white; font:bolder">Trend Analysis via Topic Modeling in our project involves identifying and visualizing patterns in research papers for the given topic to uncover underlying themes and trends</p>
+                    <h4 style="color: aqua;font-family: 'Bungee Shade';">What Does It Answers?</h4>
+                    <p style="color: white;">Underlying themes thorugh clusters and themes and the system categorizes these topics into three distant importance.
+                        - 🔥Hot topics ,🔄Neutraltopics ,💎Gap topics.
+                    </p>
+                </div>
+
+                <div class="slide" style="transform: rotateY(60deg) translateZ(630px);">
+                    <video src="/assets/d1.mp4" autoplay loop muted playsinline>
+                </div>
+
+                <div class="slide" style="transform: rotateY(120deg) translateZ(630px);">
+                    <h4 style="color: aqua;font-family: 'Bungee Shade';">What is Citation Network</h4>
+                    <p style="color: white;">This network maps relationships between research papers based on citations, 
+                        revealing influential works, clusters of related studies, and knowledge flow within a field.<br></p>
+                    <h4 style="color: aqua;font-family: 'Bungee Shade';">What Does It Answers?</h4>
+                    <ul style="color: white;">
+                        <li>Identify Main Papers</li>
+                        <li>Indentify Bridge Papers</li>
+                        <li>Filter Reference And Cited Papers</li>
+                      </ul>
+                </div>
+
+                <div class="slide" style="transform: rotateY(180deg) translateZ(630px);">
+                    <video src="/assets/d2.mp4" autoplay loop muted playsinline>
+                </div>
+
+                <div class="slide" style="transform: rotateY(240deg) translateZ(630px);">
+                    <h4 style="color: aqua;font-family: 'Bungee Shade';">What is Host/Publisher Analysis</h4>
+                    <p style="color: white;">Venue and publisher analysis identifies key players in the research landscape, 
+                        such as institutions and journals, by visualizing clusters of host organizations or 
+                        publication venues based on their publication patterns and influence.
+                </p>
+                    <h4 style="color: aqua;font-family: 'Bungee Shade';">What Does It Answers?</h4>
+                    <ul style="display: flex; gap: 20px; padding: 0; color:white;">
+                        <li>Status of Open To Access papers</li>
+                        <li>Types of papers</li>
+                        <li>Host and Publication Patterns</li>
+                      </ul>
+                </div>
+                
+
+                <div class="slide" style="transform: rotateY(300deg) translateZ(630px);">
+                    <video src="/assets/d3.mp4" autoplay loop muted playsinline>
+                </div>
+            </div>
+
+     
+            
+            <div class="pagination">
+                <div class="dot active" data-index="0"></div>
+                <div class="dot" data-index="1"></div>
+                <div class="dot" data-index="2"></div>
+                <div class="dot" data-index="3"></div>
+                <div class="dot" data-index="4"></div>
+                <div class="dot" data-index="5"></div>
+                <div class="dot" data-index="5"></div>
+            </div>
+        </div>
+        
+        <!-- Refined Open Book -->
+        <div class="book-container">
+            <div class="book">
+                <div class="book-left">
+                    <div class="page-content">
+                        <div class="page-line"></div>
+                        <div class="page-line"></div>
+                        <div class="page-line"></div>
+                    </div>
+                    <div class="page-fold"></div>
+                    <div class="page-number page-number-left">1</div>
+                </div>
+                
+                <div class="book-center"></div>
+                
+                <div class="page" id="page1">
+                    <div class="page-front">
+                        <div class="page-content">
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                        </div>
+                        <div class="page-fold"></div>
+                        <div class="page-number page-number-right">2</div>
+                    </div>
+                    <div class="page-back">
+                        <div class="page-content">
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                        </div>
+                        <div class="page-fold"></div>
+                        <div class="page-number page-number-left">3</div>
+                    </div>
+                    <div class="page-shadow"></div>
+                </div>
+                
+                <div class="page" id="page2">
+                    <div class="page-front">
+                        <div class="page-content">
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                        </div>
+                        <div class="page-fold"></div>
+                        <div class="page-number page-number-right">4</div>
+                    </div>
+                    <div class="page-back">
+                        <div class="page-content">
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                        </div>
+                        <div class="page-fold"></div>
+                        <div class="page-number page-number-left">5</div>
+                    </div>
+                    <div class="page-shadow"></div>
+                </div>
+                
+                <div class="page" id="page3">
+                    <div class="page-front">
+                        <div class="page-content">
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                        </div>
+                        <div class="page-fold"></div>
+                        <div class="page-number page-number-right">6</div>
+                    </div>
+                    <div class="page-back">
+                        <div class="page-content">
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                        </div>
+                        <div class="page-fold"></div>
+                        <div class="page-number page-number-left">7</div>
+                    </div>
+                    <div class="page-shadow"></div>
+                </div>
+                
+                <div class="page" id="page4">
+                    <div class="page-front">
+                        <div class="page-content">
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                        </div>
+                        <div class="page-fold"></div>
+                        <div class="page-number page-number-right">8</div>
+                    </div>
+                    <div class="page-back">
+                        <div class="page-content">
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                        </div>
+                        <div class="page-fold"></div>
+                        <div class="page-number page-number-left">9</div>
+                    </div>
+                    <div class="page-shadow"></div>
+                </div>
+                
+                <div class="page" id="page5">
+                    <div class="page-front">
+                        <div class="page-content">
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                        </div>
+                        <div class="page-fold"></div>
+                        <div class="page-number page-number-right">10</div>
+                    </div>
+                    <div class="page-back">
+                        <div class="page-content">
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                            <div class="page-line"></div>
+                        </div>
+                        <div class="page-fold"></div>
+                        <div class="page-number page-number-left">11</div>
+                    </div>
+                    <div class="page-shadow"></div>
+                </div>
+
+                
+                <div class="book-right">
+                    <div class="page-content">
+                        <div class="page-line"></div>
+                        <div class="page-line"></div>
+                        <div class="page-line"></div>
+                    </div>
+                    <div class="page-fold"></div>
+                    <div class="page-number page-number-right">12</div>
+                </div>
+
+                <div class="book-shadow"></div>
+            </div>
+            
+            <div class="navigation">
+                <button id="prevBtn">Previous</button>
+                <button id="nextBtn2">Next</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="architecture" class="architecture">
+        <div class="architecture-description">
+            <h3>Our Innovative Research Architecture</h3>
+            <p>PaperLens architecture integrates data scraping from Semantic API and OpenAlex, followed by robust data cleaning, to enable three key features ,Trend Analysis, Citation Networks, and Host/venue insights through interactive, user-friendly dashboards.</p>
+            
+            <div class="architecture-features">
+              <div class="architecture-feature">
+                <h4 style="text-align: center;">Dynamic Data Collection</h4>
+                <p>Continuously harvests research papers from IEEE, ArXiv, PMC, JSTOR, and PLOS databases by using semantic scholar and openAlex api's to ensure comprehensive coverage across disciplines. Say no to  manual data loading.</p>
+              </div>
+              <div class="architecture-feature">
+                <h4 style="text-align: center;">Integrated Solution</h4>
+                <p>PaperLens integrates advanced science mapping features like trend analysis and citation networks into an intuitive platform, bridging gaps left by traditional tools that often require complex configurations or lack interactivity.</p>
+              </div>
+              <div class="architecture-feature">
+                <h4 style="text-align: center;">Ease Of Use </h4>
+                <p>Designed for simplicity, our tool allows users to type and search effortlessly, eliminating the need to learn heavy concepts, unlike many existing science mapping tools that demand extensive expertise for basic tasks.</p>
+              </div>
+            </div>
+        </div>
+      <div class="container">
+        <h2 style="margin-top: 30px;font-family: 'Bungee Shade', cursive;color:aqua">PaperLens</h2>
+        <svg class="paths-container">
+        </svg>
+        <div class="center-box">
+            <div class="settings-icon-wrapper">
+                <img src="/assets/setting.png" alt="Settings">
+            </div>
+        </div>
+      </div>
+    </section>
+    <section id="contacts" class="contacts">
+        <iframe src="/contact" frameborder="1" width="100%" height="800px" style="border: 8px solid #333; border-radius: 8px; margin: 20px 0;"></iframe>
+      </section>
+
+      <section id="feedback" class="feedback">
+        <iframe src="/feedback" frameborder="1" width="100%" height="1300px" style="border: 8px solid #333; border-radius: 8px; "></iframe>
+      </section>
+    
+    <footer>
+        <p>&copy; 2025 Research Gap Analyzer. All rights reserved.</p>
+    </footer>
+    
+    
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-firestore-compat.js"></script>
+    <script type="module" src="/static/js/home.js"></script>
+    <script type="module" src="/static/js/login.js"></script>
+    <script type="module" src="/static/js/useractivity.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,182 @@
+import json
+import numpy as np
+import hdbscan
+import umap
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.metrics import silhouette_score
+import optuna
+
+# Step 1: Load JSON Data
+def load_embeddings_from_json(file_path):
+    """
+    Load JSON data from file. Supports both line-delimited JSON and single JSON array.
+    """
+    data = []
+    try:
+        with open(file_path, "r", encoding="utf-8") as json_file:
+            # Try loading as a single JSON array
+            data = json.load(json_file)
+    except json.JSONDecodeError:
+        # If it fails, assume line-delimited JSON
+        with open(file_path, "r", encoding="utf-8") as json_file:
+            for line in json_file:
+                line = line.strip()
+                if line:  # Skip empty lines
+                    try:
+                        data.append(json.loads(line))
+                    except json.JSONDecodeError as e:
+                        print(f"Skipping invalid line: {line}. Error: {e}")
+    return data
+
+
+# Step 2: Extract Embeddings and Metadata
+def extract_embeddings_and_metadata(data):
+    """
+    Extract embeddings and metadata (titles, abstracts) from the loaded JSON data.
+    """
+    embeddings = [
+        item["embedding"]["vector"]
+        for item in data
+        if "embedding" in item and "vector" in item["embedding"]
+    ]
+    titles = [item.get("title", "") for item in data]
+    abstracts = [item.get("abstract", "") for item in data]
+
+    return np.array(embeddings), titles, abstracts
+
+
+# Step 3: Define the Objective Function for Optuna
+def objective(trial):
+    """
+    Objective function for Optuna optimization.
+    """
+    # Suggest parameters within ranges
+    umap_n_components = trial.suggest_int("umap_n_components", 1, 12)
+    umap_min_dist = trial.suggest_float("umap_min_dist", 0.1, 0.8)
+    umap_n_neighbors = trial.suggest_int("umap_n_neighbors", 2, 10)
+    hdbscan_min_cluster_size = trial.suggest_int("hdbscan_min_cluster_size", 2, 10)
+    hdbscan_min_samples = trial.suggest_int("hdbscan_min_samples", 1, 10)
+    hdbscan_cluster_selection_epsilon = trial.suggest_float("hdbscan_cluster_selection_epsilon", 0.1, 0.8)
+    hdbscan_cluster_selection_method = trial.suggest_categorical("hdbscan_cluster_selection_method", ["eom", "leaf"])
+
+    # Step 1: Reduce dimensionality using UMAP
+    reducer_high_dim = umap.UMAP(
+        n_components=umap_n_components,
+        random_state=42,
+        min_dist=umap_min_dist,
+        n_neighbors=umap_n_neighbors,
+        metric="cosine"
+    )
+    reduced_embeddings_high_dim = reducer_high_dim.fit_transform(embeddings)
+
+    # Step 2: Apply HDBSCAN clustering
+    clusterer = hdbscan.HDBSCAN(
+        min_cluster_size=hdbscan_min_cluster_size,
+        min_samples=hdbscan_min_samples,
+        cluster_selection_epsilon=hdbscan_cluster_selection_epsilon,
+        cluster_selection_method=hdbscan_cluster_selection_method
+    )
+    labels = clusterer.fit_predict(reduced_embeddings_high_dim)
+
+    # Step 3: Evaluate cluster quality
+    if len(set(labels)) > 1:  # Silhouette score requires at least 2 clusters
+        score = silhouette_score(reduced_embeddings_high_dim, labels)
+    else:
+        score = -np.inf  # Penalize cases with only one cluster or noise
+
+    return score
+
+
+# Step 4: Run Optuna Optimization
+def optimize_parameters(embeddings, n_trials=100):
+    """
+    Optimize parameters using Optuna.
+    """
+    study = optuna.create_study(direction="maximize")
+    study.optimize(lambda trial: objective(trial), n_trials=n_trials)
+
+    print("Best Parameters:", study.best_params)
+    print("Best Silhouette Score:", study.best_value)
+    return study.best_params
+
+
+# Step 5: Visualize Clusters with Best Parameters
+def visualize_clusters_with_best_params(embeddings, best_params):
+    """
+    Visualize clusters using the best parameters found by Optuna.
+    """
+    # Extract best parameters
+    umap_n_components = best_params["umap_n_components"]
+    umap_min_dist = best_params["umap_min_dist"]
+    umap_n_neighbors = best_params["umap_n_neighbors"]
+    hdbscan_min_cluster_size = best_params["hdbscan_min_cluster_size"]
+    hdbscan_min_samples = best_params["hdbscan_min_samples"]
+    hdbscan_cluster_selection_epsilon = best_params["hdbscan_cluster_selection_epsilon"]
+    hdbscan_cluster_selection_method = best_params["hdbscan_cluster_selection_method"]
+
+    # Step 1: Reduce dimensionality using UMAP
+    reducer_high_dim = umap.UMAP(
+        n_components=umap_n_components,
+        random_state=42,
+        min_dist=umap_min_dist,
+        n_neighbors=umap_n_neighbors,
+        metric="cosine"
+    )
+    reduced_embeddings_high_dim = reducer_high_dim.fit_transform(embeddings)
+
+    # Step 2: Apply HDBSCAN clustering
+    clusterer = hdbscan.HDBSCAN(
+        min_cluster_size=hdbscan_min_cluster_size,
+        min_samples=hdbscan_min_samples,
+        cluster_selection_epsilon=hdbscan_cluster_selection_epsilon,
+        cluster_selection_method=hdbscan_cluster_selection_method
+    )
+    labels = clusterer.fit_predict(reduced_embeddings_high_dim)
+
+    # Step 3: Reduce dimensionality to 2D for visualization
+    reducer_low_dim = umap.UMAP(
+        n_components=2,
+        random_state=42,
+        min_dist=umap_min_dist,
+        n_neighbors=umap_n_neighbors,
+        metric="cosine"
+    )
+    reduced_embeddings_low_dim = reducer_low_dim.fit_transform(embeddings)
+
+    # Step 4: Plot clusters
+    plt.figure(figsize=(10, 8))
+
+    unique_labels = set(labels)
+    colors = plt.cm.tab20.colors
+
+    for label in unique_labels:
+        color = "gray" if label == -1 else colors[label % len(colors)]
+        xy = reduced_embeddings_low_dim[labels == label]
+        plt.scatter(xy[:, 0], xy[:, 1], c=color, label=f"Cluster {label}", s=10)
+
+    plt.title("HDBSCAN Clustering of Paper Embeddings (Best Parameters)")
+    plt.xlabel("UMAP Dimension 1")
+    plt.ylabel("UMAP Dimension 2")
+    plt.legend()
+    plt.show()
+
+
+# Main Function
+if __name__ == "__main__":
+    # Step 1: Load data
+    file_path = "cleaned_data_papers_metadata.json"
+    data = load_embeddings_from_json(file_path)
+
+    # Step 2: Extract embeddings and metadata
+    embeddings, titles, abstracts = extract_embeddings_and_metadata(data)
+
+    if embeddings.size == 0:
+        print(" No embeddings found in the data.")
+        exit()
+
+    # Step 3: Optimize parameters using Optuna
+    best_params = optimize_parameters(embeddings, n_trials=100)
+
+    # Step 4: Visualize clusters using the best parameters
+    visualize_clusters_with_best_params(embeddings, best_params)

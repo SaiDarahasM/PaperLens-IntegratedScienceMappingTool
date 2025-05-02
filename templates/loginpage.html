@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Signup</title>
+    <link rel="stylesheet" href="/static/css/loginstyle.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body>
+    <div class="paper-fall"></div>
+    <div class="wrapper">
+        <div class="form-container sign-up" id="seperate">
+            <form action="#">
+                <h2>sign up</h2>
+                <div class="form-group">
+                    <input type="text" required>
+                    <i class="fas fa-user"></i>
+                    <label for="">name</label>
+                </div>
+                <div class="form-group">
+                    <input type="email" required>
+                    <i class="fas fa-at"></i>
+                    <label for="">email</label>
+                </div>
+                <div class="form-group">
+                    <input type="password" required>
+                    <i class="fas fa-lock"></i>
+                    <label for="">password</label>
+                </div>
+                <div class="form-group">
+                    <input type="password" required>
+                    <i class="fas fa-lock"></i>
+                    <label for="">confirm password</label>
+                </div>
+                <button type="submit" class="btn">sign up</button>
+                <div class="link">
+                    <p style="color: white;">You already have an account?<a href="#" class="signin-link"> sign in</a></p>
+                </div>
+            </form>
+        </div>
+        <div class="form-container sign-in">
+            <form>
+                <h2>login</h2>
+                <div class="form-group">
+                    <input type="email" required>
+                    <i class="fas fa-at"></i>
+                    <label for="">email</label>
+                </div>
+                <div class="form-group">
+                    <input type="password" required>
+                    <i class="fas fa-lock"></i>
+                    <label for="">password</label>
+                </div>
+                <div class="forgot-pass">
+                    <a href="#">forgot password?</a>
+                </div>
+                <button type="submit" class="btn">login</button>
+                <div class="link">
+                    <p style="color: white;">Don't have an account?<a href="#" class="signup-link"> sign up</a></p>
+                </div>
+            </form>
+        </div>
+        <div class="form-container forgot-password">
+            <form action="#">
+                <h2>forgot password</h2>
+                <div class="form-group">
+                    <input type="email" required>
+                    <i class="fas fa-at"></i>
+                    <label for="">email</label>
+                </div>
+                <button type="submit" class="btn">submit</button>
+                <div class="link">
+                    <p style="color: white;">Go to Login Page ? <a href="#" class="forget-link">login</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-firestore-compat.js"></script>
+    <script src="/static/js/login.js"></script>
+</body>
+</html>

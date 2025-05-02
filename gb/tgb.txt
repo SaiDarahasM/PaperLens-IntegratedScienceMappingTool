@@ -1,0 +1,118 @@
+import pandas as pd
+import numpy as np
+import json
+import optuna
+from sentence_transformers import SentenceTransformer
+from bertopic import BERTopic
+from umap import UMAP
+import hdbscan
+from sklearn.metrics import silhouette_score, davies_bouldin_score
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Load & Preprocess Data
+def load_data(file_path):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    df = pd.DataFrame(data)
+    df['text'] = df['title'] + ' ' + df['abstract']
+    return df
+
+# Generate Embeddings
+def generate_embeddings(texts, model_name="allenai/scibert_scivocab_uncased"):
+    model = SentenceTransformer(model_name)
+    return model.encode(texts, show_progress_bar=True)
+
+# Objective Function for Hyperparameter Optimization
+def objective(trial, texts, embeddings):
+    min_cluster_size = trial.suggest_int("min_cluster_size", 3, 10)
+    min_samples = trial.suggest_int("min_samples", 1, 3)
+    n_neighbors = trial.suggest_int("n_neighbors", 5, 15)
+    n_components = trial.suggest_int("n_components", 5, 15)
+    umap_model = UMAP(n_neighbors=n_neighbors, n_components=n_components, metric='cosine')
+    hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples,
+                                    metric='euclidean', cluster_selection_method='eom')
+    topic_model = BERTopic(umap_model=umap_model, hdbscan_model=hdbscan_model)
+    topics, _ = topic_model.fit_transform(texts, embeddings)
+    valid_clusters = [t for t in topics if t != -1]
+    if len(set(valid_clusters)) < 2:
+        return float("inf")
+    sil_score = silhouette_score(embeddings, topics)
+    db_score = davies_bouldin_score(embeddings, topics)
+    return db_score - sil_score
+
+# Run Hyperparameter Optimization
+def optimize_params(df):
+    texts = df['text'].tolist()
+    embeddings = generate_embeddings(texts)
+    study = optuna.create_study(direction="minimize")
+    study.optimize(lambda trial: objective(trial, texts, embeddings), n_trials=30)
+    print("Best Hyperparameters:", study.best_params)
+    return study.best_params
+
+# Determine dynamic nr_topics value
+def determine_nr_topics(topic_model, texts):
+    num_topics = len(topic_model.get_topics())
+    if num_topics > len(texts) * 0.5:
+        return int(num_topics * 0.5)
+    elif num_topics < 5:
+        return num_topics
+    else:
+        return int(num_topics * 0.8)
+
+# Determine topics to merge based on similarity
+def determine_topics_to_merge(topic_model, embedding_model, threshold=0.8):
+    topic_info = topic_model.get_topic_info()
+    topic_texts = [topic_info.iloc[i]['Representation'] for i in range(len(topic_info))]
+    if len(topic_texts) < 2:
+        return []
+    topic_embeddings = embedding_model.encode(topic_texts)
+    similarities = cosine_similarity(topic_embeddings)
+    np.fill_diagonal(similarities, 0)  # Ignore self-similarity
+    
+    topics_to_merge = []
+    for i, row in enumerate(similarities):
+        similar_topics = [j for j, sim in enumerate(row) if sim > threshold and i < j]  # Avoid duplicates
+        if similar_topics:
+            topics_to_merge.append([i] + similar_topics)
+    
+    return topics_to_merge
+
+# Train Final Model with Optimized Parameters
+def train_final_model(df, best_params):
+    texts = df['text'].tolist()
+    embeddings = generate_embeddings(texts)
+    umap_model = UMAP(n_neighbors=best_params["n_neighbors"], n_components=best_params["n_components"], metric='cosine')
+    hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=best_params["min_cluster_size"], min_samples=best_params["min_samples"],
+                                    metric='euclidean', cluster_selection_method='eom')
+    topic_model = BERTopic(umap_model=umap_model, hdbscan_model=hdbscan_model)
+    topics, _ = topic_model.fit_transform(texts, embeddings)
+    embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+    nr_topics = determine_nr_topics(topic_model, texts)
+    
+    # Reduce topics if necessary
+    if nr_topics < len(topic_model.get_topics()):
+        print(f"Dynamically Reducing to {nr_topics} topics")
+        topic_model.reduce_topics(texts, nr_topics=nr_topics)
+    
+    # Determine topics to merge
+    topics_to_merge = determine_topics_to_merge(topic_model, embedding_model, threshold=0.8)
+    if topics_to_merge:
+        print(f"Dynamically Merging Topics: {topics_to_merge}")
+        topic_model.merge_topics(texts, topics_to_merge=topics_to_merge)
+    
+    df['topic'] = topics
+    return df, topic_model
+
+# Main Execution
+def main():
+    file_path = 'papers_metadata.json'
+    df = load_data(file_path)
+    # Find best hyperparameters
+    best_params = optimize_params(df)
+    # Train model with best parameters
+    df, topic_model = train_final_model(df, best_params)
+    # Save optimized model
+    topic_model.save('optimized_bertopic_model')
+
+if __name__ == "__main__":
+    main()

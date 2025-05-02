@@ -1,0 +1,115 @@
+import networkx as nx
+import pickle
+import plotly.graph_objects as go
+import numpy as np
+import random
+
+# Load graph
+with open("graph_data.gpickle", "rb") as f:
+    G = pickle.load(f)
+print("Graph loaded successfully!")
+
+# Get top 30 important nodes
+degree_dict = dict(G.degree())
+top_nodes = sorted(degree_dict, key=degree_dict.get, reverse=True)[:30]
+G_sub = G.subgraph(top_nodes)
+
+# Compute layout (force-directed for better spacing)
+pos = nx.spring_layout(G_sub, seed=42, k=0.6)
+
+# Assign colors dynamically based on clusters
+clusters = {node: random.randint(1, 4) for node in G_sub.nodes()}  
+color_map = ["#FF5733", "#33FF57", "#3357FF", "#F333FF"]
+node_colors = [color_map[clusters[n] - 1] for n in G_sub.nodes()]
+
+# Extract edge coordinates with more curved effect using Bézier curves
+edge_x, edge_y = [], []
+highlighted_edge_x, highlighted_edge_y = [], []
+highlighted_edges = set(G_sub.edges())
+
+def bezier_curve(x0, y0, x1, y1, curvature=0.3):
+    """Generate a set of points representing a Bézier curve."""
+    xm, ym = (x0 + x1) / 2, (y0 + y1) / 2  # Midpoint
+    cx, cy = xm + curvature * (y1 - y0), ym - curvature * (x1 - x0)  # Control point
+    return [x0, cx, x1, None], [y0, cy, y1, None]
+
+for u, v in G_sub.edges():
+    x0, y0 = pos[u]
+    x1, y1 = pos[v]
+    bx, by = bezier_curve(x0, y0, x1, y1, curvature=0.2)  # More natural curve
+
+    if (u, v) in highlighted_edges or (v, u) in highlighted_edges:
+        highlighted_edge_x.extend(bx)
+        highlighted_edge_y.extend(by)
+    else:
+        edge_x.extend(bx)
+        edge_y.extend(by)
+
+# Standard Edges
+edge_trace = go.Scatter(
+    x=edge_x, y=edge_y,
+    line=dict(width=1.2, color="gray", dash="dot"),
+    mode="lines",
+    hoverinfo="none"
+)
+
+# Highlighted Edges
+highlighted_edge_trace = go.Scatter(
+    x=highlighted_edge_x, y=highlighted_edge_y,
+    line=dict(width=2.5, color="#FFD700"),  # Gold for highlighting
+    mode="lines",
+    hoverinfo="none"
+)
+
+# Node attributes
+node_x, node_y, node_text = [], [], []
+sizes = np.array([12 + degree_dict[n] * 2 for n in G_sub.nodes()])  
+
+for node in G_sub.nodes():
+    x, y = pos[node]
+    node_x.append(x)
+    node_y.append(y)
+    node_text.append(f"<b>{node}</b><br>Degree: {degree_dict[node]}<br>Cluster: {clusters[node]}")
+
+node_trace = go.Scatter(
+    x=node_x, y=node_y,
+    mode='markers+text',
+    text=node_text,
+    textposition="top center",
+    hoverinfo='text',
+    marker=dict(
+        size=sizes.tolist(),
+        color=node_colors,
+        showscale=False,
+        line=dict(width=2, color="black"),
+        symbol="circle"
+    )
+)
+
+# Randomly Select Background Colors
+bg_color_palettes = [
+    ['#1b1b2f', '#162447', '#1f4068', '#e43f5a'],  
+    ['#ff6f3c', '#ff9a3c', '#ffb84c', '#f4f1de'],  
+    ['#222831', '#393e46', '#00adb5', '#eeeeee'],  
+    ['#2b2e4a', '#e84545', '#903749', '#53354a']  
+]
+selected_bg_colors = random.choice(bg_color_palettes)
+paper_bgcolor, plot_bgcolor = selected_bg_colors[:2]
+
+# Final figure
+fig = go.Figure(data=[edge_trace, highlighted_edge_trace, node_trace],
+                layout=go.Layout(
+                    title='⚡ Amusing & Attractive Co-Word Network (Top 30) ⚡',
+                    title_x=0.5,
+                    title_font=dict(size=20),
+                    showlegend=False,
+                    hovermode='closest',
+                    margin=dict(b=20, l=5, r=5, t=40, autoexpand=True),
+                    paper_bgcolor=paper_bgcolor,  
+                    plot_bgcolor=plot_bgcolor,  
+                    font=dict(color="white"),  
+                    xaxis=dict(showgrid=False, zeroline=False),
+                    yaxis=dict(showgrid=False, zeroline=False)
+                ))
+
+fig.write_html("network_graph.html", auto_open=True)

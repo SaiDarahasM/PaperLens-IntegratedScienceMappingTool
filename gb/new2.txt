@@ -1,0 +1,290 @@
+import json
+import pandas as pd
+import numpy as np
+import re
+import umap
+import hdbscan
+import plotly.io as pio
+import plotly.express as px
+import matplotlib.pyplot as plt
+import seaborn as sns
+from collections import Counter, defaultdict
+from itertools import combinations
+from keybert import KeyBERT
+from bertopic import BERTopic
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+from skopt import gp_minimize
+from skopt.space import Integer
+import plotly.graph_objects as go
+from sentence_transformers import SentenceTransformer
+from sklearn.cluster import KMeans
+import torch
+import random
+import multiprocessing
+import networkx as nx
+from sklearn.metrics import silhouette_score
+import optuna
+
+
+def set_seed(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
+if __name__ == "__main__":
+    set_seed(42)  # Call this before any operations
+    multiprocessing.freeze_support()
+
+    # Load Model Once
+    embedding_model = SentenceTransformer("allenai/specter")
+    topic_model = None
+
+    # Step 1: Load JSON Data
+    with open("cleaned_data_papers_metadata.json", "r", encoding="utf-8") as f:
+        papers = json.load(f)
+
+    df = pd.DataFrame(papers)
+    df = df[["paperId", "title", "abstract", "citationCount",
+             "influentialCitationCount", "embedding"]]
+
+    # Convert embeddings
+    def convert_embedding(embedding):
+        return np.array(embedding["vector"] ,dtype=np.float64) if isinstance(embedding, dict) and "vector" in embedding else None
+
+    df["embedding"] = df["embedding"].apply(convert_embedding)
+    df = df.dropna(subset=["embedding"])
+
+    # Step 2: Preprocessing
+    def clean_text(text):
+        text = str(text).lower()
+        text = re.sub(r"[^a-zA-Z0-9\s]", "", text)
+        return ' '.join([word for word in text.split() if word not in ENGLISH_STOP_WORDS])
+
+    df["clean_text"] = (df["abstract"].fillna("")).apply(clean_text)
+
+    # Initialize KeyBERT with SciBERT
+    kw_model = KeyBERT(embedding_model)
+    co_occurrence = defaultdict(int)
+    keyword_docs = defaultdict(set)
+
+    def extract_keywords(text):
+        keywords = [kw[0] for kw in kw_model.extract_keywords(
+            text, keyphrase_ngram_range=(1, 2), stop_words="english", top_n=10)]
+
+        # Stream co-occurrence counting
+        for pair in combinations(set(keywords), 2):
+            sorted_pair = tuple(sorted(pair))
+            co_occurrence[sorted_pair] += 1
+
+        # Track document frequency
+        for kw in keywords:
+            keyword_docs[kw].add(text)
+
+        return keywords
+
+    df["keywords"] = df["clean_text"].apply(extract_keywords)
+
+    # Step 3: Enhanced Network Construction
+    def build_co_network(co_occurrence, doc_freq_threshold=0.005):
+        G = nx.Graph()
+        N = len(df)
+        min_docs = max(1, int(N * doc_freq_threshold))
+
+        # Node filtering with fallback
+        significant_kws = {kw for kw, docs in keyword_docs.items()
+                           if len(docs) >= min_docs or len(docs) >= 2}
+
+        # Dynamic edge threshold
+        weights = list(co_occurrence.values())
+        edge_threshold = np.percentile(weights, 50) if weights else 1
+
+        for (kw1, kw2), weight in co_occurrence.items():
+            if weight >= edge_threshold and kw1 in significant_kws and kw2 in significant_kws:
+                G.add_edge(kw1, kw2, weight=weight)
+                G.nodes[kw1]["count"] = len(keyword_docs[kw1])
+                G.nodes[kw2]["count"] = len(keyword_docs[kw2])
+
+        return G
+
+    G = build_co_network(co_occurrence)
+
+    # Step 4: Hybrid Cluster Labeling
+    def enhanced_labeling(topic_model, topics, G, cluster_id):
+        try:
+            # Get BERTopic keywords
+            topic_words = [word for word, _ in topic_model.get_topic(cluster_id)]
+
+            # Get network-central keywords
+            cluster_kws = [kw for idx, kw in enumerate(df["keywords"]) if topics[idx] == cluster_id]
+            centrality = nx.degree_centrality(G)
+            top_network_words = sorted(set(sum(cluster_kws, [])),
+                                       key=lambda x: centrality.get(x, 0),
+                                       reverse=True)[:3]
+
+            # Merge and deduplicate
+            combined = list(dict.fromkeys(top_network_words + topic_words))[:5]
+            print(f"Cluster {cluster_id}: {combined}")  # Debug output
+            return " | ".join(combined)
+        except Exception as e:
+            print(f"Labeling failed for Cluster {cluster_id}: {str(e)}")  # Log the error
+            return f"Cluster {cluster_id}"
+    
+
+
+    # Step 5: Adaptive Clustering
+    N = len(df)
+    if N < 20:
+        print("Using K-Means for small dataset")
+        k = max(2, int(np.sqrt(N)))
+        kmeans = KMeans(n_clusters=k, random_state=42).fit(np.vstack(df["embedding"].values))
+        df["topic"] = kmeans.labels_
+        topic_labels = {i: f"Cluster {i}" for i in range(k)}
+    else:
+        # Initial parameters based on empirical rules
+        base_size = max(3, int(np.sqrt(N) * 0.7))
+        n_neighbors = max(5, min(15, int(np.log(N) * 2)))
+
+        umap_model = umap.UMAP(
+            random_state=42,
+            n_components=9,
+            n_neighbors=n_neighbors,
+            min_dist=0.43,
+            metric="cosine"
+        )
+
+        hdbscan_model = hdbscan.HDBSCAN(
+            min_cluster_size=base_size,
+            min_samples=max(1, int(0.3 * base_size)),
+            cluster_selection_epsilon=0.45,
+            cluster_selection_method='eom',
+            approx_min_span_tree=False
+        )
+
+        topic_model = BERTopic(
+            umap_model=umap_model,
+            hdbscan_model=hdbscan_model,
+            embedding_model=embedding_model,
+            nr_topics='auto',
+            top_n_words=20,
+            n_gram_range=(1, 3)
+        )
+
+        # Initial clustering
+        topics, _ = topic_model.fit_transform(df["clean_text"], np.vstack(df["embedding"].values))
+        df["topic"] = topics
+
+        # Generate hybrid labels
+        unique_topics = set(topics)
+        topic_labels = {t: enhanced_labeling(topic_model, topics, G, t) for t in unique_topics}
+
+        # Calculate initial metrics
+        initial_topics = df["topic"].values
+        valid_mask_initial = initial_topics != -1 if -1 in initial_topics else np.ones(len(df), dtype=bool)
+        valid_embeddings_initial = np.vstack(df["embedding"][valid_mask_initial])
+        valid_topics_initial = initial_topics[valid_mask_initial]
+
+        print("\nInitial Clustering Metrics:")
+        if len(set(valid_topics_initial)) > 1:
+            try:
+                silhouette_initial = silhouette_score(valid_embeddings_initial, valid_topics_initial)
+                dbcv_initial = hdbscan.validity.validity_index(np.vstack(df["embedding"].values), initial_topics)
+                print(f"- Silhouette Score: {silhouette_initial:.2f}")
+                print(f"- DBCV Score: {dbcv_initial:.2f}")
+                print(f"- Number of Clusters: {len(set(initial_topics)) - (-1 in initial_topics)}")
+            except Exception as e:
+                print(f"Error calculating initial metrics: {str(e)}")
+        else:
+            print("Skipping initial metrics: Only one valid cluster found.")
+
+        # Parameter optimization using Optuna
+        def objective(trial):
+    # Suggest parameters within ranges
+            umap_n_components = trial.suggest_int("umap_n_components", 1, 12)
+            umap_min_dist = trial.suggest_float("umap_min_dist", 0.1, 0.8)
+            umap_n_neighbors = trial.suggest_int("umap_n_neighbors", 2, 10)
+            hdbscan_min_cluster_size = trial.suggest_int("hdbscan_min_cluster_size", 2, 10)
+            hdbscan_min_samples = trial.suggest_int("hdbscan_min_samples", 1, 10)
+            hdbscan_cluster_selection_epsilon = trial.suggest_float("hdbscan_cluster_selection_epsilon", 0.1, 0.8)
+            hdbscan_cluster_selection_method = trial.suggest_categorical("hdbscan_cluster_selection_method", ["eom", "leaf"])
+
+            # Step 1: Reduce dimensionality using UMAP
+            reducer_high_dim = umap.UMAP(
+                n_components=umap_n_components,
+                random_state=42,
+                min_dist=umap_min_dist,
+                n_neighbors=umap_n_neighbors,
+                metric="cosine"
+            )
+            reduced_embeddings_high_dim = reducer_high_dim.fit_transform(np.vstack(df["embedding"].values)).astype(np.float64)
+
+            # Step 2: Apply HDBSCAN clustering
+            clusterer = hdbscan.HDBSCAN(
+                min_cluster_size=hdbscan_min_cluster_size,
+                min_samples=hdbscan_min_samples,
+                cluster_selection_epsilon=hdbscan_cluster_selection_epsilon,
+                cluster_selection_method=hdbscan_cluster_selection_method
+            )
+            labels = clusterer.fit_predict(reduced_embeddings_high_dim)
+
+            # Step 3: Evaluate cluster quality using DBCV
+            if len(set(labels)) > 1:  # DBCV requires at least 2 clusters
+                dbcv_score = hdbscan.validity.validity_index(reduced_embeddings_high_dim, labels)
+            else:
+                dbcv_score = -np.inf  # Penalize cases with only one cluster or noise
+
+            return dbcv_score
+
+        study = optuna.create_study(direction="maximize")
+        study.optimize(objective, n_trials=100)
+
+        print("Best Parameters:", study.best_params)
+        print("Best DBCV Score:", study.best_value)
+
+        # Re-run clustering with optimized parameters
+        best_params = study.best_params
+        umap_model = umap.UMAP(
+            n_components=best_params["umap_n_components"],
+            random_state=42,
+            min_dist=best_params["umap_min_dist"],
+            n_neighbors=best_params["umap_n_neighbors"],
+            metric="cosine"
+        )
+        hdbscan_model = hdbscan.HDBSCAN(
+            min_cluster_size=best_params["hdbscan_min_cluster_size"],
+            min_samples=best_params["hdbscan_min_samples"],
+            cluster_selection_epsilon=best_params["hdbscan_cluster_selection_epsilon"],
+            cluster_selection_method=best_params["hdbscan_cluster_selection_method"]
+        )
+
+        # Update and retrain BERTopic
+        topic_model = BERTopic(
+            umap_model=umap_model,
+            hdbscan_model=hdbscan_model,
+            embedding_model=embedding_model,
+            nr_topics='auto',
+            top_n_words=20,
+            n_gram_range=(1, 2)
+        )
+        labels, _ = topic_model.fit_transform(df["clean_text"], np.vstack(df["embedding"].values))
+        df["topic"] = labels
+        # Generate labels with the updated topic_model
+        topic_labels = {t: enhanced_labeling(topic_model, labels, G, t) for t in set(labels)}
+
+    # Step 6: Output Results
+    cluster_sizes = df["topic"].value_counts()
+    print("Cluster Sizes:\n", cluster_sizes)
+    print("\nCluster Titles:")
+    for cluster_id, title in sorted(topic_labels.items()):
+        print(f"- Cluster {cluster_id}: {title}")
+    
+    # Step 7: Optional Visualization
+    reduced_embeddings = umap.UMAP(n_components=2, random_state=42).fit_transform(np.vstack(df["embedding"].values)).astype(np.float64)
+    df["x"] = reduced_embeddings[:, 0]
+    df["y"] = reduced_embeddings[:, 1]
+    df["topic_label"] = df["topic"].map(topic_labels)
+    fig = px.scatter(df, x="x", y="y", color="topic_label", hover_data=["title"], title="Cluster Visualization")
+    fig.write_html("filename.html", auto_open=True)

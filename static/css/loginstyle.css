@@ -1,0 +1,460 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+:root {
+    --mainColor1: #4a90e2;
+    --mainColor2: #7f56d9;
+    --whiteColor: #ffffff;
+    --titleColor: #555555;
+    --labelColor: #333333;
+    --text-color: #333;
+    --secondary-color: #fcee0a;
+    --aqua: #47f5f2;
+}
+
+html {
+    font-size: 62.5%;
+    scroll-behavior: smooth;
+}
+
+body {
+    background: linear-gradient(to right, var(--secondary-color), var(--secondary-color));
+    font-weight: 400;
+    min-height: 100vh;
+    display: grid;
+    place-content: center;
+    overflow: hidden;
+}
+
+
+.paper-fall {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.paper {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background-color: #fff;
+    border-radius: 2px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    animation: fall linear infinite;
+}
+
+@keyframes fall {
+    0% {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh);
+        opacity: 0;
+    }
+}
+
+
+.wrapper {
+    position: relative;
+    width: 35rem;
+    height: 50rem;
+}
+
+@media(min-width: 540px) {
+    .wrapper {
+        width: 40rem;
+    }
+}
+
+.form-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: var(--text-color);
+    border-radius: 0.5rem;
+    box-shadow: 0 0 1rem rgba(0, 0, 0, 0.2);
+}
+
+.form-container h2 {
+    font-size: 3rem;
+    text-align: center;
+    text-transform: capitalize;
+    color: var(--whiteColor);
+}
+
+.form-group {
+    position: relative;
+    width: 32rem;
+    margin: 3rem 0;
+}
+
+.form-group i,
+.form-group label {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.6rem;
+    color: var(--labelColor);
+    padding: 0 0.5rem;
+    transition: all 0.5s ease;
+    pointer-events: none;
+}
+
+.form-group i {
+    left: 0.5rem;
+}
+
+.form-group label {
+    left: 2.5rem;
+}
+
+.form-group input {
+    width: 100%;
+    height: 4rem;
+    padding: 0 1rem;
+    border-radius: 0.5rem;
+    border: 0.1rem solid var(--whiteColor);
+    font-size: 1.6rem;
+    color: var(--labelColor);
+    background: white;
+    outline: none;
+}
+
+.form-group input:focus ~ label,
+.form-group input:valid ~ label,
+.form-group input:focus ~ i,
+.form-group input:valid ~ i {
+    top: 0 !important;
+    font-size: 1.2rem !important;
+    background: var(--whiteColor);
+}
+
+.forgot-pass {
+    margin: -1.5rem 0 1.5rem;
+    text-align: center;
+}
+
+.forgot-pass a {
+    color: var(--whiteColor);
+    text-decoration: none;
+    font-size: 1.4rem;
+    transition: all 0.5s ease;
+}
+
+.forgot-pass a:hover {
+    color: var(--mainColor1);
+}
+
+
+.wrapper .form-container.forgot-password {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var (-text-color);
+    border-radius: .5rem;
+    box-shadow: 0 0 1rem 0 rgba(0, 0, 0, 0.2);
+    transform: rotate(7deg);
+}
+
+/* Animation for Forgot Password */
+.wrapper.animated-forgot .form-container.forgot-password {
+    animation: forgot-flip 1s ease-in-out forwards;
+    z-index: 3;
+}
+
+@keyframes forgot-flip {
+    0% {
+        transform: translateX(0);
+    }
+    50% {
+        transform: translateX(-50rem) scale(1.1);
+    }
+    100% {
+        transform: translateX(0) rotate(7deg) scale(1);
+    }
+}
+
+.wrapper.animated-forgot .form-container.sign-in,
+.wrapper.animated-forgot .form-container.sign-up {
+    animation: rotatecard 0.7s ease-in-out forwards;
+    animation-delay: 0.3s;
+}
+
+
+
+
+.btn {
+    background: linear-gradient(to right, var(--aqua), var(--aqua));
+    color: var(--whiteColor);
+    width: 100%;
+    height: 4rem;
+    font-size: 1.6rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 0.2rem 1rem rgba(0, 0, 0, 0.4);
+}
+
+.link {
+    text-align: center;
+    font-size: 1.4rem;
+    color: var(--labelColor);
+    margin: 2.5rem 0;
+}
+
+.link a {
+    color: var(--mainColor1);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.5s ease;
+}
+
+.link a:hover {
+    color: #da4453;
+}
+
+.sign-up {
+    transform: rotate(7deg);
+}
+
+.animated-signin .sign-in {
+    animation: signin-flip 1s ease-in-out forwards;
+}
+
+@keyframes signin-flip {
+    0% {
+        transform: translateX(0);
+    }
+    50% {
+        transform: translateX(-50rem) scale(1.1);
+    }
+    100% {
+        transform: translateX(0) rotate(7deg) scale(1);
+    }
+}
+
+.animated-signin .sign-up {
+    animation: rotatecard 0.7s ease-in-out forwards;
+}
+
+.animated-signup .sign-up {
+    animation: signup-flip 1s ease-in-out forwards;
+}
+
+@keyframes signup-flip {
+    0% {
+        transform: translateX(0);
+        z-index: 1;
+    }
+    50% {
+        transform: translateX(50rem) scale(1.1);
+    }
+    100% {
+        transform: translateX(0) rotate(7deg) scale(1);
+    }
+}
+
+.animated-signup .sign-in {
+    transform: rotate(7deg);
+    animation: rotatecard 0.7s ease-in-out forwards;
+    animation-delay: 0.3s;
+}
+
+@keyframes rotatecard {
+    0% {
+        transform: rotate(7deg);
+    }
+    100% {
+        transform: rotate(0);
+        z-index: 1;
+    }
+}
+
+/* 
+.success-animation {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    text-align: center;
+}
+
+.checkmark {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #7f56d9;
+    margin: 0 auto;
+    position: relative;
+    animation: scaleIn 0.3s ease-out;
+}
+
+.checkmark::after {
+    content: '';
+    position: absolute;
+    left: 25px;
+    top: 40px;
+    width: 25px;
+    height: 5px;
+    background: #fff;
+    transform: rotate(45deg);
+    animation: checkmark 0.3s ease-out;
+}
+
+.checkmark::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 30px;
+    width: 40px;
+    height: 5px;
+    background: #fff;
+    transform: rotate(-45deg);
+    animation: checkmark 0.4s ease-out;
+}
+
+.success-text {
+    color: #7f56d9;
+    font-size: 2.4rem;
+    margin-top: 20px;
+    opacity: 0;
+    animation: fadeInUp 0.5s ease-out 0.3s forwards;
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0);
+    }
+    to {
+        transform: scale(1);
+    }
+}
+
+@keyframes checkmark {
+    from {
+        width: 0;
+        height: 0;
+    }
+    to {
+        width: 25px;
+        height: 5px;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.success-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: 999;
+}
+ */
+
+
+
+ /* Paper Animation Styles */
+
+.page {
+    position: absolute;
+    width: 70px;
+    height: 90px;
+    background-color: var(--mainColor1);
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    animation: scatter 3s ease-in-out forwards;
+    z-index: 1000;
+}
+
+.tear-left,
+.tear-right {
+    position: absolute;
+    width: 75px;
+    height: 200px;
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.tear-left {
+    clip-path: polygon(0 0, 100% 0, 70% 100%, 0% 100%);
+    animation: tearLeft 2s ease-in-out forwards;
+}
+
+.tear-right {
+    clip-path: polygon(30% 0, 100% 0, 100% 100%, 0% 100%);
+    animation: tearRight 2s ease-in-out forwards;
+}
+
+@keyframes scatter {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--x), var(--y)) rotate(var(--rotate));
+        opacity: 0;
+    }
+}
+
+@keyframes tearLeft {
+    0% {
+        transform: translateX(0) rotate(0deg);
+    }
+    100% {
+        transform: translateX(-150px) rotate(-20deg);
+    }
+}
+
+@keyframes tearRight {
+    0% {
+        transform: translateX(0) rotate(0deg);
+    }
+    100% {
+        transform: translateX(150px) rotate(20deg);
+    }
+}
+
+.paper {
+    position: fixed;
+    pointer-events: none;
+    transform-origin: center center;
+    filter: blur(1px);
+    mix-blend-mode: screen;
+    background: white;
+    top: 0;
+    left: 0;
+}

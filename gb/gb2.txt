@@ -1,0 +1,342 @@
+import json
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
+from sentence_transformers import SentenceTransformer
+from sklearn.manifold import TSNE
+import plotly.express as px
+import spacy
+import sys
+import os
+import warnings
+import plotly.io as pio
+
+# Suppress warnings
+warnings.filterwarnings("ignore")
+
+# Configure Plotly to render only in the browser
+pio.renderers.default = "browser"  # Force Plotly to render only in the browser
+
+sys.stdout.reconfigure(encoding='utf-8')  # Ensure UTF-8 encoding for output
+
+# Load data from JSON file
+def load_data(file_path):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return pd.DataFrame(data)
+
+# Preprocess text
+def preprocess_text(texts):
+    nlp = spacy.load("en_core_web_sm")
+    processed_texts = []
+    for text in texts:
+        if not text or text.strip() == "":
+            processed_texts.append("")  # Replace missing/empty abstracts with an empty string
+            continue
+        doc = nlp(text.lower())
+        tokens = [
+            token.lemma_ for token in doc 
+            if not token.is_stop and token.is_alpha and len(token.text) > 2
+        ]
+        # Add bigrams
+        bigrams = [f"{tokens[i]}_{tokens[i+1]}" for i in range(len(tokens)-1)]
+        processed_texts.append(" ".join(tokens + bigrams))
+    return processed_texts
+
+# Name clusters using TF-IDF
+def name_clusters(data, num_clusters):
+    cluster_names = {}
+    vectorizer = TfidfVectorizer(max_features=1000, ngram_range=(1, 2))
+    
+    for cluster_id in range(num_clusters):
+        cluster_texts = data[data['cluster'] == cluster_id]['processed_abstract']
+        cluster_texts = cluster_texts[cluster_texts != ""]  # Exclude empty abstracts
+        
+        if len(cluster_texts) == 0:  # Handle empty clusters
+            cluster_names[cluster_id] = "Empty Cluster"
+            continue
+        
+        X_tfidf = vectorizer.fit_transform(cluster_texts)
+        terms = vectorizer.get_feature_names_out()
+        
+        # Get top terms
+        term_scores = X_tfidf.sum(axis=0).A1
+        top_terms = [terms[i] for i in term_scores.argsort()[::-1][:5]]
+        cluster_names[cluster_id] = " ".join(top_terms)
+    
+    return cluster_names
+
+# Main function
+def main():
+    # Load data
+    file_path = "papers_metadata.json"
+    data = load_data(file_path)
+    
+    # Preprocess abstracts
+    data['processed_abstract'] = preprocess_text(data['abstract'])
+    
+    # Filter out papers with empty abstracts
+    valid_papers = data[data['processed_abstract'] != ""]
+    if valid_papers.empty:
+        print("No valid abstracts found. Exiting.")
+        return
+    
+    # Generate Sentence-BERT embeddings
+    model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+    embeddings = model.encode(valid_papers['processed_abstract'].tolist())
+    
+    # Reduce dimensionality with PCA
+    pca = PCA(n_components=50)  # Retain 50 principal components
+    reduced_embeddings = pca.fit_transform(embeddings)
+    
+    # Apply Agglomerative Clustering
+    num_clusters = 6  # You can adjust this based on domain knowledge or metrics
+    if num_clusters < 2:
+        print("Number of clusters must be at least 2 for clustering. Exiting.")
+        return
+    
+    agg_clustering = AgglomerativeClustering(
+        n_clusters=num_clusters, 
+        metric='cosine',  # Use 'cosine' distance
+        linkage='average'
+    )
+    valid_papers['cluster'] = agg_clustering.fit_predict(reduced_embeddings)
+    
+    # Evaluate clustering quality
+    silhouette_avg = silhouette_score(reduced_embeddings, valid_papers['cluster'], metric='cosine')
+    print(f"\nSilhouette Score: {silhouette_avg:.4f}")
+    
+    # Name clusters
+    cluster_names = name_clusters(valid_papers, num_clusters)
+    valid_papers['cluster_name'] = valid_papers['cluster'].map(cluster_names)
+    
+    # Combine valid papers with missing papers
+    missing_papers = data[data['processed_abstract'] == ""]
+    missing_papers['cluster'] = num_clusters  # Assign missing papers to a new cluster
+    missing_papers['cluster_name'] = "Empty Abstract"
+    data = pd.concat([valid_papers, missing_papers], ignore_index=True)
+    
+    # Save cluster names and all paper titles to a text file
+    output_file = "cluster_titles.txt"
+    with open(output_file, "w", encoding="utf-8") as f:
+        for cluster_id, name in cluster_names.items():
+            f.write(f"Cluster: {name}\n")
+            cluster_papers = valid_papers[valid_papers['cluster'] == cluster_id]['title'].tolist()
+            f.write("Papers:\n")
+            for title in cluster_papers:
+                f.write(f"- {title}\n")
+            f.write("\n")
+        # Save Empty Abstract cluster separately
+        f.write("Cluster: Empty Abstract\n")
+        f.write("Papers:\n")
+        for title in missing_papers['title'].tolist():
+            f.write(f"- {title}\n")
+        f.write("\n")
+    print(f"\nCluster titles and all paper titles saved to {output_file}")
+    
+    # Visualize clusters using t-SNE
+    tsne = TSNE(n_components=2, random_state=42, metric='cosine')
+    embeddings_2d = tsne.fit_transform(reduced_embeddings)
+    fig = px.scatter(
+        x=embeddings_2d[:, 0], 
+        y=embeddings_2d[:, 1], 
+        color=valid_papers['cluster'], 
+        title="t-SNE Visualization of Clusters",
+        labels={'color': 'Cluster'}
+    )
+    # fig.show()  # This will now render only once in the browser
+    
+    # Visualize cluster distribution
+    cluster_counts = data['cluster_name'].value_counts().reset_index()
+    cluster_counts.columns = ['Cluster', 'Count']
+    fig = px.bar(
+        cluster_counts,
+        x='Cluster',
+        y='Count',
+        title="Number of Papers in Each Cluster",
+        labels={'Cluster': 'Cluster Name', 'Count': 'Number of Papers'},
+        color='Count',
+        color_continuous_scale='Viridis'
+    )
+    fig.update_layout(
+        xaxis_title="Cluster Name",
+        yaxis_title="Number of Papers",
+        font=dict(size=14),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)'
+    )
+    fig.show()  # This will now render only once in the browser
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   
+
+
+
+
+
+
+
+import pandas as pd
+import numpy as np
+import json
+import plotly.express as px
+import plotly.graph_objects as go
+from sentence_transformers import SentenceTransformer
+from bertopic import BERTopic
+from keybert import KeyBERT
+from umap import UMAP
+import hdbscan
+from transformers import T5Tokenizer, T5ForConditionalGeneration
+
+# Load & Preprocess Data
+def load_data(file_path):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    df = pd.DataFrame(data)
+    df['text'] = df['title'] + ' ' + df['abstract']  # Combine title and abstract
+    return df
+
+# Generate Embeddings
+def generate_embeddings(texts, model_name='allenai/specter'):
+    model = SentenceTransformer(model_name)
+    return model.encode(texts, show_progress_bar=True)
+
+# Apply BERTopic with More Granular Clustering
+def cluster_papers(embeddings, texts, min_cluster_size=3, min_samples=1, n_neighbors=15, n_components=14):
+    umap_model = UMAP(n_neighbors=n_neighbors, n_components=n_components, metric='cosine')
+    hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples,
+                                    metric='euclidean', cluster_selection_method='leaf')
+    topic_model = BERTopic(umap_model=umap_model, hdbscan_model=hdbscan_model)
+    topics, _ = topic_model.fit_transform(texts, embeddings)
+    return topic_model, topics
+
+# Extract Keywords for Each Cluster
+def name_clusters(texts, topics):
+    kw_model = KeyBERT()
+    topic_keywords = {}
+    for topic_id in np.unique(topics):
+        if topic_id == -1:
+            topic_keywords[topic_id] = "Miscellaneous (Unclustered)"
+        else:
+            cluster_texts = [texts[i] for i in range(len(texts)) if topics[i] == topic_id]
+            keywords = kw_model.extract_keywords(' '.join(cluster_texts), keyphrase_ngram_range=(1, 2), top_n=5, diversity=0.7)
+            topic_keywords[topic_id] = ', '.join([kw[0] for kw in keywords])
+    return topic_keywords
+
+from transformers import T5Tokenizer, T5ForConditionalGeneration
+
+# Generate Cluster Titles Using T5
+def generate_cluster_titles(topic_keywords):
+    tokenizer = T5Tokenizer.from_pretrained("t5-small")
+    model = T5ForConditionalGeneration.from_pretrained("t5-small")
+    topic_names = {}
+    
+    for topic_id, keywords in topic_keywords.items():
+        if topic_id == -1:
+            topic_names[topic_id] = "Miscellaneous (Unclustered)"
+        else:
+            # Improved Prompt Structure
+            input_text = f"summarize: {keywords}"
+            inputs = tokenizer.encode(input_text, return_tensors="pt", max_length=512, truncation=True)
+            outputs = model.generate(inputs, max_length=20, num_beams=4, early_stopping=True)
+            title = tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+            
+            # Fallback to keywords if no title is generated
+            topic_names[topic_id] = title if title else keywords
+    return topic_names
+
+# Save Clustered Data in Readable Format
+def save_clustered_data(df, topic_names, file_name="clustered_papers.txt"):
+    with open(file_name, "w", encoding="utf-8") as f:
+        for topic_id, topic_name in topic_names.items():
+            f.write(f"Cluster: {topic_name} ({topic_id})\n")
+            papers = df[df['topic'] == topic_id]['title'].tolist()
+            for paper in papers:
+                f.write(f"  - {paper}\n")
+            f.write("\n")
+    print(f"Clusters saved to {file_name}")
+
+# Create Interactive Cluster Visualization
+def plot_clusters(df, topic_names):
+    topic_counts = df['topic'].value_counts().reset_index()
+    topic_counts.columns = ['topic', 'count']
+    topic_counts['name'] = topic_counts['topic'].map(topic_names)
+    fig = px.bar(topic_counts, x='name', y='count', text='count',
+                 labels={'name': 'Cluster Name', 'count': 'Number of Papers'},
+                 title="Research Paper Clusters")
+    # Add hover interaction to display paper titles per cluster
+    hover_texts = []
+    for topic in topic_counts['topic']:
+        paper_titles = df[df['topic'] == topic]['title'].tolist()
+        hover_texts.append("<br>".join(paper_titles))
+    fig.update_traces(marker_color='lightskyblue', hoverinfo="text", textposition="outside")
+    fig.update_traces(hovertext=hover_texts)
+    # Add clickable functionality to filter clusters
+    fig.update_layout(clickmode='event+select')
+    fig.show()
+
+# Main Execution
+def main():
+    file_path = 'papers_metadata.json'  # Update with your dataset file
+    df = load_data(file_path)
+    embeddings = generate_embeddings(df['text'].tolist())
+    topic_model, topics = cluster_papers(embeddings, df['text'].tolist())
+    df['topic'] = topics
+    
+    # Extract Keywords for Each Cluster
+    topic_keywords = name_clusters(df['text'].tolist(), topics)
+    
+    # Generate Cluster Titles Using DistilGPT2
+    topic_names = generate_cluster_titles(topic_keywords)
+    
+    # Save cluster results in a readable text file
+    save_clustered_data(df, topic_names)
+    
+    # Interactive Visualization
+    plot_clusters(df, topic_names)
+    
+    # Save the BERTopic Model
+    topic_model.save('bertopic_model')
+
+if __name__ == "__main__":
+    main()

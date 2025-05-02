@@ -1,0 +1,590 @@
+// Add this to your existing JS file or in a <script> tag before the closing </body> tag
+
+// Loading overlay functionality
+const loadingOverlay = {
+  overlay: document.getElementById('loading-overlay'),
+  cyclone: null,
+  loadingText: null,
+  animationInterval: null,
+  paperInterval: null,
+  
+  initialize() {
+    this.cyclone = document.getElementById('cyclone');
+    this.loadingText = document.getElementById('loading-text');
+    this.setupAnimation();
+  },
+  
+  setupAnimation() {
+    // Pre-setup animation elements so they're ready when needed
+    for (let i = 0; i < 10; i++) {
+      this.createPaper(i);
+    }
+  },
+  
+  show(message = 'Processing...') {
+    this.loadingText.textContent = message;
+    this.overlay.classList.add('active');
+    
+    // Start creating papers
+    this.paperInterval = setInterval(() => {
+      this.createPaper();
+    }, 120);
+    
+    // Animate loading text
+    let dots = 0;
+    this.animationInterval = setInterval(() => {
+      dots = (dots + 1) % 4;
+      this.loadingText.textContent = message + '.'.repeat(dots);
+    }, 500);
+  },
+  
+  hide() {
+    this.overlay.classList.remove('active');
+    
+    // Clear intervals
+    clearInterval(this.paperInterval);
+    clearInterval(this.animationInterval);
+    
+    // Clear all papers after animation ends
+    setTimeout(() => {
+      while (this.cyclone.firstChild) {
+        this.cyclone.removeChild(this.cyclone.firstChild);
+      }
+    }, 300);
+  },
+  
+  createPaper(index) {
+    const paper = document.createElement('div');
+    paper.className = 'paper';
+    
+    // Randomize paper appearance for more realistic effect
+    const size = 8 + Math.random() * 12;
+    paper.style.width = `${size}px`;
+    paper.style.height = `${size * 1.3}px`;
+    
+    // Random subtle variations in white color
+    const whiteness = 95 + Math.random() * 5;
+    paper.style.backgroundColor = `hsl(0, 0%, ${whiteness}%)`;
+    
+    // Give it a slight skew to look more like paper
+    const skewX = Math.random() * 10 - 5;
+    const skewY = Math.random() * 10 - 5;
+    paper.style.transform = `skew(${skewX}deg, ${skewY}deg)`;
+    
+    // Start position - at the top of the cyclone
+    const startAngle = Math.random() * Math.PI * 2;
+    const startRadius = 60 + Math.random() * 20;
+    const startX = 100 + startRadius * Math.cos(startAngle);
+    const startY = -20; // Start above the visible area
+    
+    paper.style.left = `${startX}px`;
+    paper.style.top = `${startY}px`;
+    
+    this.cyclone.appendChild(paper);
+    
+    // Animate the paper with a specific starting point in the spiral
+    this.animatePaperInCyclone(paper, startAngle);
+  },
+  
+  animatePaperInCyclone(paper, initialAngle) {
+    // Animation duration
+    const duration = 6000 + Math.random() * 2000;
+    const startTime = Date.now();
+    
+    // Initial state
+    let angle = initialAngle || 0;
+    let height = -20; // Start above the visible area
+    const maxHeight = 350; // End height
+    const rotationSpeed = 1.0 + Math.random() * 0.5; // More consistent rotation speed
+    
+    const animateFrame = () => {
+      if (!this.overlay.classList.contains('active')) {
+        if (paper.parentNode === this.cyclone) {
+          this.cyclone.removeChild(paper);
+        }
+        return;
+      }
+      
+      const now = Date.now();
+      const elapsed = now - startTime;
+      const progress = elapsed / duration;
+      
+      if (progress < 1) {
+        // Calculate new height with a clear downward flow
+        // Move from top to bottom with easing
+        height = -20 + (maxHeight + 20) * Math.min(1, progress * 1.2);
+        
+        // Calculate spiral radius - wider at top, narrower at bottom
+        // Creates a funnel/cyclone shape
+        const heightProgress = height / maxHeight;
+        const currentRadius = Math.max(10, 80 - 60 * heightProgress);
+        
+        // Rotate faster as it gets closer to the bottom
+        const adjustedRotation = rotationSpeed * (1 + heightProgress * 0.5);
+        angle += adjustedRotation * 0.03;
+        
+        // Calculate position
+        const x = 100 + currentRadius * Math.cos(angle);
+        const y = height;
+        
+        // Apply position
+        paper.style.left = `${x}px`;
+        paper.style.top = `${y}px`;
+        
+        // Apply rotation and scaling
+        const rotation = angle * (180 / Math.PI);
+        // Increase fluttering effect as paper falls
+        const flutter = Math.sin(elapsed * 0.01) * (5 + heightProgress * 10);
+        paper.style.transform = `rotate(${rotation + flutter}deg) scale(${0.8 + Math.sin(progress * Math.PI * 4) * 0.1})`;
+        
+        // Adjust opacity near the end for a fading effect
+        if (progress > 0.8) {
+          paper.style.opacity = (1 - progress) * 5;
+        }
+        
+        requestAnimationFrame(animateFrame);
+      } else {
+        // Remove paper when animation completes
+        if (paper.parentNode === this.cyclone) {
+          this.cyclone.removeChild(paper);
+        }
+      }
+    };
+    
+    requestAnimationFrame(animateFrame);
+  }
+};
+
+// Initialize the loading overlay when the DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  loadingOverlay.initialize();
+});
+
+
+
+
+------------------------------------------------------------------------------------------------------
+
+
+const searchBtn = document.getElementById("searchbtn");
+searchBtn.addEventListener("click", function () {
+  console.log("Search button clicked");
+ 
+
+
+  const isLoggedIn = localStorage.getItem("username");
+  if (!isLoggedIn) {
+    alert("You must be signed in to perform a search.");
+    return;
+  }
+
+  const searchInput = document.querySelector('.search-input');
+  if (!searchInput) {
+    console.error("Search input element not found");
+    alert("Search input not found. Please check the page structure.");
+    return;
+  }
+
+  const searchTopic = searchInput.value.trim();
+  const yearFilter = document.getElementById('yearFilter');
+  const searchYear = yearFilter ? yearFilter.value : "";
+  const userId = localStorage.getItem("userId");
+
+  // Validate inputs
+  if (!searchTopic) {
+    alert("Please enter a search topic");
+    return;
+  }
+
+  console.log(`Searching for: ${searchTopic}, Year: ${searchYear}, Feature: ${selectedFeature}`);
+
+
+  let currentPage = 0;
+const nextBtn = document.getElementById("nextBtn");
+
+nextBtn.addEventListener("click", function () {
+  currentPage+=1
+  alert("just checking bro " +currentPage );
+  trendanalysis(currentPage);
+});
+
+
+
+function trendanalysis(pageNo){
+       const originalText = searchBtn.textContent;
+       searchBtn.textContent = "Processing...";
+       searchBtn.disabled = true;
+       nextBtn.style.display = "inline-block";
+
+    fetch('/check-data-exists/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: userId,
+        topic: searchTopic,
+        year: searchYear
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.exists) {
+        console.log('Data exists, skipping analysis step');
+        // If data exists, go directly to analyze-trends
+        return fetch('/analyze-trends/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: userId,
+            topic: searchTopic,
+            year: searchYear,
+            page: pageNo
+          })
+        });
+      } else {
+        console.log('Data does not exist, starting full analysis');
+        // If data doesn't exist, start with the analysis step
+        return fetch('/analyze/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: userId,
+            topic: searchTopic,
+            year: searchYear
+          })
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Analysis failed: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(analysisData => {
+          console.log('Analysis complete:', analysisData);
+          // Now proceed to analyze-trends
+          return fetch('/analyze-trends/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: userId,
+              topic: searchTopic,
+              year: searchYear,
+              page: pageNo
+            })
+          });
+        });
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Trend analysis failed: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(trendData => {
+      console.log('Trend analysis complete:', trendData);
+      alert("Analysis complete!");
+      // Handle redirection to results page or display results
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert("There was an error processing your request. Please try again: " + error.message);
+    })
+    .finally(() => {
+      // Always reset button state
+      searchBtn.textContent = originalText;
+      searchBtn.disabled = false;
+    });
+  }
+
+
+
+ if (selectedFeature.feature === 'trends') {
+  console.log("here here")
+       trendanalysis(0);
+  } 
+   else if (selectedFeature.feature === 'citations') {
+    nextBtn.style.display = "none";
+    currentPage = 0;
+    alert("just checking bro " + currentPage );
+    const originalText = this.textContent;
+    this.textContent = "Processing...";
+    this.disabled = true;
+
+    // First check if data exists in MongoDB
+    fetch('/check-data-exists-citation/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            userId: userId,
+            topic: searchTopic,
+            year: searchYear
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.exists) {
+            console.log('Data exists, fetching citation data...');
+           
+            window.open(`/citation-data?userId=${encodeURIComponent(userId)}&topic=${encodeURIComponent(searchTopic)}&year=${encodeURIComponent(searchYear)}`, '_blank');
+        } else {
+            console.log('Data does not exist, starting full analysis...');
+            // If data doesn't exist, start with the /save step
+            return fetch('/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: userId,
+                    topic: searchTopic,
+                    year: searchYear
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Save failed: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(saveData => {
+                console.log('Data saved successfully:', saveData);
+              
+                window.open(`/citation-data?userId=${encodeURIComponent(userId)}&topic=${encodeURIComponent(searchTopic)}&year=${encodeURIComponent(searchYear)}`, '_blank');
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("There was an error processing your request. Please try again: " + error.message);
+    })
+    .finally(() => {
+        // Always reset button state
+        this.textContent = originalText;
+        this.disabled = false;
+    });
+}
+  
+//   else if (selectedFeature === 'citations') {
+//     // Show loading indicator
+//     const originalText = this.textContent;
+//     this.textContent = "Processing...";
+//     this.disabled = true;
+
+//     // First check if data exists in MongoDB
+//     fetch('/check-data-exists-citation/', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({
+//             userId: userId,
+//             topic: searchTopic,
+//             year: searchYear
+//         })
+//     })
+//     .then(response => {
+//         if (!response.ok) {
+//             throw new Error(`Network response was not ok: ${response.status}`);
+//         }
+//         return response.json();
+//     })
+//     .then(data => {
+//         if (data.exists) {
+//             console.log('Data exists, fetching citation data...');
+//             // If data exists, go directly to /citation-data
+//                 fetch('/citation-data', {
+//                 method: 'POST',
+//                 headers: {
+//                     'Content-Type': 'application/json',
+//                 },
+//                 body: JSON.stringify({
+//                     userId: userId, 
+//                     topic: searchTopic,
+//                     year: searchYear
+//                 })
+//             });
+//         } else {
+//             console.log('Data does not exist, starting full analysis...');
+//             // If data doesn't exist, start with the /save step
+//              fetch('/save', {
+//                 method: 'POST',
+//                 headers: {
+//                     'Content-Type': 'application/json',
+//                 },
+//                 body: JSON.stringify({
+//                     userId: userId,
+//                     topic: searchTopic,
+//                     year: searchYear
+//                 })
+//             })
+//             .then(response => {
+//                 if (!response.ok) {
+//                     throw new Error(`Save failed: ${response.status}`);
+//                 }
+//                 return response.json();
+//             })
+//             .then(saveData => {
+//                 console.log('Data saved successfully:', saveData);
+//                 // Now proceed to /citation-data
+//                   fetch('/citation-data', {
+//                     method: 'POST',
+//                     headers: {
+//                         'Content-Type': 'application/json',
+//                     },
+//                     body: JSON.stringify({
+//                         userId: userId,
+//                         topic: searchTopic,
+//                         year: parseInt(searchYear) || new Date().getFullYear()
+//                     })
+//                 });
+//             });
+//         }
+//     })
+//     // .then(response => {
+//     //     if (!response.ok) {
+//     //         throw new Error(`Citation data retrieval failed: ${response.status}`);
+//     //     }
+//     //     return response.json();
+//     // })
+//     // .then(citationData => {
+//     //     console.log('Citation data retrieved successfully:', citationData);
+//     //     alert("Citation analysis complete!");
+//     //     // Handle redirection to results page or display results
+//     // })
+//     .catch(error => {
+//         console.error('Error:', error);
+//         alert("There was an error processing your request. Please try again: " + error.message);
+//     })
+//     .finally(() => {
+//         // Always reset button state
+//         this.textContent = originalText;
+//         this.disabled = false;
+//     });
+// }
+  
+
+else if (selectedFeature.feature === 'venues') {
+  nextBtn.style.display = "none";
+  currentPage = 0;
+  const originalText = this.textContent;
+  this.textContent = "Processing...";
+  this.disabled = true;
+
+  
+
+
+  fetch('/check-data-exists-venue/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      userId: userId,
+      topic: searchTopic,
+      year: searchYear
+    })
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`Network response was not ok: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data.exists) {
+      console.log('Data exists, loading dashboard directly');
+    
+      
+      // If data exists, go directly to load_and_display_dashboard
+      return fetch('/load_and_display_dashboard/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          topic: searchTopic,
+          year: searchYear
+        })
+      });
+    } else {
+      console.log('Data does not exist, starting search process');
+      // If data doesn't exist, start with the search step
+      return fetch('/search/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          topic: searchTopic,
+          year: searchYear
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Search failed: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(searchData => {
+        console.log('Search complete:', searchData);
+        // Now proceed to load_and_display_dashboard
+        return fetch('/load_and_display_dashboard/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: userId,
+            topic: searchTopic,
+            year: searchYear
+          })
+        });
+      });
+    }
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`Dashboard loading failed: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(dashboardData => {
+    console.log('Dashboard loaded successfully:', dashboardData);
+    // Dashboard is loaded in a separate window by the endpoint
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert("There was an error processing your request. Please try again: " + error.message);
+  })
+  .finally(() => {
+    // Always reset button state
+    this.textContent = originalText;
+    this.disabled = false;
+  });
+
+} else {
+    alert("Invalid feature selected. Please choose a valid feature.");
+  }
+});
